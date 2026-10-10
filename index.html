@@ -21,6 +21,7 @@
   --sen:#5a6480; --sen-deep:#3c4459; --sen-ink:#eef0f7;
   --none:#4b4562; --coral:#ff7a5c; --danger:#ff8a7a;
   --sat:#86b6ff; --sun:#ff8f8f; --today:#ff7a5c; --today-ink:#2a0d05; --tmrw:#b9a2ff; --tmrw-ink:#1a0f3a;
+  --wd0:#ff8f8f; --wd1:#ffd23f; --wd2:#ff9a52; --wd3:#5fd0ff; --wd4:#6ee08a; --wd5:#e8b64c; --wd6:#86b6ff;
   --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
   --f-body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
   color-scheme:dark;
@@ -33,6 +34,7 @@
   --sen:#7d87a1; --sen-deep:#5d667d; --sen-ink:#ffffff;
   --none:#cbc4da; --coral:#f0603f; --danger:#c8402c;
   --sat:#2563c9; --sun:#cf3434; --today:#f0603f; --today-ink:#ffffff; --tmrw:#7552d6; --tmrw-ink:#ffffff;
+  --wd0:#cf3434; --wd1:#a87c00; --wd2:#d0601a; --wd3:#0f86b8; --wd4:#2e8f45; --wd5:#9a6f0c; --wd6:#2563c9;
   color-scheme:light;
 }}
 :root[data-theme="light"]{
@@ -43,6 +45,7 @@
   --sen:#7d87a1; --sen-deep:#5d667d; --sen-ink:#ffffff;
   --none:#cbc4da; --coral:#f0603f; --danger:#c8402c;
   --sat:#2563c9; --sun:#cf3434; --today:#f0603f; --today-ink:#ffffff; --tmrw:#7552d6; --tmrw-ink:#ffffff;
+  --wd0:#cf3434; --wd1:#a87c00; --wd2:#d0601a; --wd3:#0f86b8; --wd4:#2e8f45; --wd5:#9a6f0c; --wd6:#2563c9;
   color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -106,6 +109,11 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .seg button{border:0;background:transparent;border-radius:10px;padding:10px 4px;font-weight:800;font-size:13px;line-height:1.3}
 .seg button.on{background:var(--masu);color:var(--masu-ink)}
 .seg.two{grid-template-columns:1fr 1fr}
+.switch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;cursor:pointer}
+.switch-row input{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;margin:0;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
+.switch-row input::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--fg);transition:transform .2s}
+.switch-row input:checked{background:var(--masu)}
+.switch-row input:checked::before{transform:translateX(20px);background:var(--masu-ink)}
 .seg.two button[data-s="tabun"].on{background:var(--tabun);color:var(--tabun-ink)}
 .rule-hint{font-size:13px;color:var(--muted);margin:0}
 
@@ -134,7 +142,8 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contai
 .score-info{flex:1;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;min-width:0}
 .score-info .linkbtn{font-size:12px;padding:0}
 .day{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--muted)}
-.day b{color:var(--fg);font-size:15px}
+.day b{color:var(--fg);font-size:15px;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.dow-pill{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 6px;border-radius:999px;background:var(--c);color:var(--bg);font-size:13px;font-weight:800;line-height:1}
 .count{display:flex;align-items:baseline;gap:4px;font-variant-numeric:tabular-nums;flex:none}
 .count .n{font-family:var(--f-display);font-size:58px;line-height:1;color:var(--masu)}
 .count .of{font-family:var(--f-display);font-size:22px;color:var(--muted)}
@@ -392,7 +401,7 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
         <div class="card score">
           <div class="day"><b id="dayLabel"></b><span id="resetNote"></span></div>
           <div class="score-row">
-            <div class="count"><span class="n" id="masuN">0</span><span class="of">/</span><span class="of" id="needN">4</span><span class="u">ます</span></div>
+            <div class="count"><span class="n" id="masuN">0</span><span class="of" id="slashN">/</span><span class="of" id="needN">4</span><span class="u" id="unitN">ます</span></div>
             <div class="score-info">
               <div class="pips" id="pips" aria-hidden="true"></div>
               <div class="sub"><span class="rule-tag" id="ruleTag"></span><span id="scoreSub"></span></div>
@@ -523,6 +532,10 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
     <button class="btn primary" id="ruleSave">ルールを保存</button>
   </div>
   <div class="sec">
+    <label class="switch-row" for="planToggle"><span>「今日やること」を表示する</span><input type="checkbox" id="planToggle" role="switch"></label>
+    <p class="rule-hint">オンにするとメンバー全員の画面に表示されます</p>
+  </div>
+  <div class="sec">
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
   </div>
 </div></div>
@@ -576,7 +589,7 @@ function parseDay(d){ const [y,m,dd] = d.split("-").map(Number); return new Date
 function addDays(d, n){ const t = parseDay(d); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
 function dayLabel(d, short){
   const t = parseDay(d), m = t.getUTCMonth() + 1, dd = t.getUTCDate(), w = DOW[t.getUTCDay()];
-  return short ? `${m}/${dd}(${w})` : `${m}月${dd}日(${w})`;
+  return `${m}/${dd}(${w})`;
 }
 function relLabel(d){ return d === S.day ? "今日" : d === addDays(S.day, 1) ? "明日" : dayLabel(d, true); }
 function shiftMonth(ym, delta){ const [y,m] = ym.split("-").map(Number); return new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7); }
@@ -679,7 +692,7 @@ function openGroup(gid){
   S.unsubs.push(g.onSnapshot(snap => {
     if (S.gid !== gid) return;
     const d = snap.exists ? snap.data() : null;
-    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d) } : null;
+    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), showPlan: d.showPlan !== false } : null;
     if (!snap.metadata.fromCache || d) S.groupLoaded = true; else settle("groupLoaded");
     render();
   }, onSubError));
@@ -946,15 +959,20 @@ function renderMain(){
   // scoreboard
   const masuN = ids.filter(id => isMasu(today[id])).length;
   const tabunN = ids.filter(id => isTabun(today[id])).length;
-  $("dayLabel").textContent = (day === S.day ? "今日 " : day === addDays(S.day, 1) ? "明日 " : "") + dayLabel(day);
-  const ms = msUntilReset();
-  $("resetNote").textContent = day === S.day ? `朝5時に切り替え・あと${Math.floor(ms/3600e3)}時間${Math.floor(ms%3600e3/60e3)}分` : "";
+  {
+    const t = parseDay(day), w = t.getUTCDay();
+    $("dayLabel").replaceChildren((day === S.day ? "今日 " : day === addDays(S.day, 1) ? "明日 " : "") + `${t.getUTCMonth() + 1}/${t.getUTCDate()}`,
+      h("span", { class:"dow-pill", style:`--c:var(--wd${w})`, text:DOW[w] }));
+  }
+  $("resetNote").textContent = day === S.day ? "朝5時で切り替え" : "";
   $("masuN").textContent = masuN; $("needN").textContent = rule.need;
+  $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
+  $("unitN").textContent = rule.open ? "人がます" : "ます";
   const pips = $("pips"); pips.replaceChildren();
-  for (let i = 0, total = Math.max(rule.need, masuN); i < total; i++) pips.append(h("span", {class: "pip " + (i < masuN ? "f" : i < masuN + tabunN ? "t" : "")}));
+  for (let i = 0, total = rule.open ? ids.length : Math.max(rule.need, masuN); i < total; i++) pips.append(h("span", {class: "pip " + (i < masuN ? "f" : i < masuN + tabunN ? "t" : "")}));
   $("ruleTag").textContent = rule.tag; $("ruleTag").classList.toggle("ov", !!rule.override);
   const rest = rule.need - masuN;
-  $("scoreSub").textContent = (rest > 0 ? `あと${rest}人` : `${masuN}人そろった`) + (tabunN ? `・たぶん${tabunN}人` : "");
+  $("scoreSub").textContent = (rule.open ? (rest > 0 ? `あと${rest}人でやれる` : "やれる!") : (rest > 0 ? `あと${rest}人` : `${masuN}人そろった`)) + (tabunN ? `・たぶん${tabunN}人` : "");
   $("ovBtn").textContent = rule.override ? "この日の人数を変える" : "この日だけ変える";
   $("ovBtn").hidden = ro;
   const fest = masuN >= rule.need && masuN > 0;
@@ -1015,6 +1033,8 @@ function renderMain(){
 
 let planEditing = false;
 function renderPlan(){
+  $("planCard").hidden = !S.group.showPlan;
+  if (!S.group.showPlan) return;
   const day = S.sel, plan = S.plans[day], ro = S.canWrite === false;
   $("planLabel").textContent = `${relLabel(day)}やること`;
   $("planBy").textContent = plan && plan.by && S.members[plan.by] ? `${S.members[plan.by].name}が決めた` : "";
@@ -1120,6 +1140,7 @@ function renderSheets(){
     $("ovReset").hidden = !ov;
   }
   if (isOpen("shCal")) renderCal();
+  if (isOpen("shSet")) $("planToggle").checked = S.group.showPlan;
   if (isOpen("shSet") && document.activeElement !== $("rName") && !$("rName").dataset.dirty) $("rName").value = S.members[S.uid].name;
 }
 
@@ -1189,7 +1210,7 @@ function weekText(){
   const lines = weekDays().map(d => { const a = mineOn(d); return `${dayLabel(d, true)} ${a ? answerLine(a) : "未定"}`; });
   return `【${S.group.name}】今週の予定\n${lines.join("\n")}\n${linkFor(S.gid)}`;
 }
-function planLine(day){ const p = S.plans[day]; return p ? `${relLabel(day)}やること:${p.text}\n` : ""; }
+function planLine(day){ const p = S.group.showPlan && S.plans[day]; return p ? `${relLabel(day)}やること:${p.text}\n` : ""; }
 function nudgeText(){
   const day = S.sel, ans = answersFor(day), ids = Object.keys(S.members), r = needFor(day);
   const pending = ids.filter(id => !ans[id]).map(id => S.members[id].name + "さん");
@@ -1260,12 +1281,19 @@ $("ruleSave").addEventListener("click", async () => {
   catch (err){ onWriteError(err); }
 });
 $("switchBtn").addEventListener("click", () => go(null));
+$("planToggle").addEventListener("change", async e => {
+  const on = e.target.checked;
+  S.group = { ...S.group, showPlan:on }; render();
+  try { await withRetry(() => S.db.doc("groups/" + S.gid).update({ showPlan:on })); toast(on ? "「今日やること」を表示します" : "「今日やること」を非表示にしました"); }
+  catch (err){ onWriteError(err); }
+});
 
 $("answers").addEventListener("click", e => {
   const b = e.target.closest(".ans"); if (!b) return;
-  burst(b, e);
-  const s = b.dataset.s;
   if (S.canWrite === false) return;
+  const s = b.dataset.s, me = mineOn(S.sel);
+  if (me && me.status === s){ clearMine(); return; }
+  burst(b, e);
   saveMine({ status:s });
 });
 function tapHour(hr){
@@ -1290,7 +1318,8 @@ $("gameForm").addEventListener("submit", e => {
 $("commentForm").addEventListener("submit", e => {
   e.preventDefault(); saveMine({ comment: $("commentInput").value.trim() }); $("commentInput").blur(); toast("ひとことを送りました");
 });
-$("clearBtn").addEventListener("click", () => {
+$("clearBtn").addEventListener("click", () => clearMine());
+function clearMine(){
   const k = myKey(S.sel); if (!S.answers[k]) return;
   const a = { ...S.answers }; delete a[k]; S.answers = a;
   $("commentInput").value = "";
@@ -1298,7 +1327,7 @@ $("clearBtn").addEventListener("click", () => {
   render();
   writeDoc(S.db.doc(`groups/${S.gid}/answers/${k}`), null);
   toast("返事を取り消しました");
-});
+}
 
 
 let ovN = 2;
