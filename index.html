@@ -859,6 +859,7 @@ function openGroup(gid, quiet){
   // which member this browser acts as, when it isn't the browser that joined
   S.unsubs.push(g.collection("links").doc(S.uid).onSnapshot(snap => {
     if (S.gid !== gid) return;
+    if (snap.metadata.hasPendingWrites) return;   // wait for the server's verdict
     const d = snap.exists ? snap.data() : null;
     S.linkMid = d && typeof d.mid === "string" ? d.mid : null;
     if (!snap.metadata.fromCache || d) S.linkLoaded = true; else settle("linkLoaded");
