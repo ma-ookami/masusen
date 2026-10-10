@@ -137,7 +137,11 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contai
 }
 
 /* scoreboard */
-.score{position:relative;overflow:hidden;padding:10px 14px 12px;flex:none}
+.score{position:relative;overflow:hidden;padding:10px 14px 12px;flex:none;cursor:pointer;transition:transform .1s}
+.score:active{transform:scale(.99)}
+.ov-info{margin:0;padding:10px 12px;border-radius:12px;background:var(--surface-2);display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13px}
+.ov-info dt{color:var(--muted);font-weight:700}
+.ov-info dd{margin:0;font-weight:700}
 .score-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px}
 .score-info{flex:1;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;min-width:0}
 .score-info .linkbtn{font-size:12px;padding:0}
@@ -398,14 +402,13 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
     <div class="notice" id="roNotice" hidden>いまは返事を保存できない状態です。ページを再読み込みしてください。</div>
     <div class="main">
       <div class="col">
-        <div class="card score">
-          <div class="day"><b id="dayLabel"></b><span id="resetNote"></span></div>
+        <div class="card score" id="scoreCard" role="button" tabindex="0" aria-label="この日の開催ルールを見る・変える">
+          <div class="day"><b id="dayLabel"></b></div>
           <div class="score-row">
             <div class="count"><span class="n" id="masuN">0</span><span class="of" id="slashN">/</span><span class="of" id="needN">4</span><span class="u" id="unitN">ます</span></div>
             <div class="score-info">
               <div class="pips" id="pips" aria-hidden="true"></div>
               <div class="sub"><span class="rule-tag" id="ruleTag"></span><span id="scoreSub"></span></div>
-              <button class="linkbtn" id="ovBtn">この日だけ変える</button>
             </div>
           </div>
           <div class="fest" id="fest"></div>
@@ -486,8 +489,14 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
 <!-- override sheet -->
 <div class="sheet" id="shOverride" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
   <div class="grab"></div>
-  <div class="sh"><h2 id="ovTitle">この日だけ人数を変える</h2><button class="x" data-close aria-label="閉じる">✕</button></div>
-  <p class="rule-hint" id="ovHint"></p>
+  <div class="sh"><h2 id="ovTitle">開催ルール</h2><button class="x" data-close aria-label="閉じる">✕</button></div>
+  <dl class="ov-info">
+    <dt>いつものルール</dt><dd id="ovUsual"></dd>
+    <dt>この日</dt><dd id="ovToday"></dd>
+    <dt>切り替え</dt><dd>毎朝5時に新しい日になります</dd>
+  </dl>
+  <span class="label">この日だけ人数を変える</span>
+  <p class="rule-hint" id="ovHint">決めた人数の「ます」がいれば、この日はやることにします。</p>
   <div class="stepper"><button type="button" id="ovMinus" aria-label="減らす">−</button><output id="ovN">2</output><span>人いればやる</span><button type="button" id="ovPlus" aria-label="増やす">+</button></div>
   <button class="btn primary" id="ovSave">この日だけこの人数にする</button>
   <button class="linkbtn" id="ovReset" hidden>いつものルールにもどす</button>
@@ -534,6 +543,10 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
   <div class="sec">
     <label class="switch-row" for="planToggle"><span>「今日やること」を表示する</span><input type="checkbox" id="planToggle" role="switch"></label>
     <p class="rule-hint">オンにするとメンバー全員の画面に表示されます</p>
+  </div>
+  <div class="sec">
+    <span class="label">1日の切り替え</span>
+    <p class="rule-hint">毎朝5時に新しい日に切り替わります。0時〜5時は前の日の続きとして扱います。</p>
   </div>
   <div class="sec">
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
@@ -964,7 +977,6 @@ function renderMain(){
     $("dayLabel").replaceChildren((day === S.day ? "今日 " : day === addDays(S.day, 1) ? "明日 " : "") + `${t.getUTCMonth() + 1}/${t.getUTCDate()}`,
       h("span", { class:"dow-pill", style:`--c:var(--wd${w})`, text:DOW[w] }));
   }
-  $("resetNote").textContent = day === S.day ? "朝5時で切り替え" : "";
   $("masuN").textContent = masuN; $("needN").textContent = rule.need;
   $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
   $("unitN").textContent = rule.open ? "人がます" : "ます";
@@ -973,8 +985,6 @@ function renderMain(){
   $("ruleTag").textContent = rule.tag; $("ruleTag").classList.toggle("ov", !!rule.override);
   const rest = rule.need - masuN;
   $("scoreSub").textContent = (rule.open ? (rest > 0 ? `あと${rest}人でやれる` : "やれる!") : (rest > 0 ? `あと${rest}人` : `${masuN}人そろった`)) + (tabunN ? `・たぶん${tabunN}人` : "");
-  $("ovBtn").textContent = rule.override ? "この日の人数を変える" : "この日だけ変える";
-  $("ovBtn").hidden = ro;
   const fest = masuN >= rule.need && masuN > 0;
   const dayWord = day === S.day ? "今日" : day === addDays(S.day, 1) ? "明日" : "この日";
   $("fest").textContent = rule.open ? `${dayWord}は${masuN}人でやります!` : `${dayWord}は開催です!`;
@@ -1135,9 +1145,11 @@ function renderSheets(){
   }
   if (isOpen("shOverride")){
     const ov = S.overrides[day];
-    $("ovTitle").textContent = `${dayLabel(day)}だけ人数を変える`;
-    $("ovHint").textContent = `いつものルール:${ruleText(S.group, Object.keys(S.members).length)}。この日だけ、決めた人数の「ます」がいればやることにします。`;
+    $("ovTitle").textContent = `${dayLabel(day)}の開催ルール`;
+    $("ovUsual").textContent = ruleText(S.group, Object.keys(S.members).length);
+    $("ovToday").textContent = ov ? `この日だけ${ov}人いればやる` : "いつものルールどおり";
     $("ovReset").hidden = !ov;
+    $("ovSave").disabled = S.canWrite === false;
   }
   if (isOpen("shCal")) renderCal();
   if (isOpen("shSet")) $("planToggle").checked = S.group.showPlan;
@@ -1332,7 +1344,9 @@ function clearMine(){
 
 let ovN = 2;
 const setOv = v => { ovN = Math.max(1, Math.min(20, v)); $("ovN").textContent = ovN; };
-$("ovBtn").addEventListener("click", () => { setOv(S.overrides[S.sel] || Math.max(1, needFor(S.sel).need - 1)); openSheet("shOverride"); });
+function openRuleSheet(){ setOv(S.overrides[S.sel] || Math.max(1, needFor(S.sel).need - 1)); openSheet("shOverride"); }
+$("scoreCard").addEventListener("click", openRuleSheet);
+$("scoreCard").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openRuleSheet(); } });
 $("ovMinus").addEventListener("click", () => setOv(ovN - 1));
 $("ovPlus").addEventListener("click", () => setOv(ovN + 1));
 $("ovSave").addEventListener("click", async () => {
