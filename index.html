@@ -189,7 +189,8 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
 .chip.sm{padding:3px 10px;font-size:12px;white-space:nowrap}
 
 /* answer buttons */
-.answers{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;padding-top:4px;margin-bottom:8px;flex:none}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:22px 14px;padding-top:2px;margin-bottom:10px;flex:none}
+.ans-hint{margin:0 0 -2px;text-align:center;font-size:13px;font-weight:700;color:var(--muted);flex:none}
 .ans{--c:var(--masu);--d:var(--masu-deep);--k:var(--masu-ink);position:relative;border:0;border-radius:20px;padding:10px 8px 9px;display:flex;flex-direction:column;align-items:center;gap:0;user-select:none;touch-action:manipulation;
   background:var(--c);color:var(--k);box-shadow:0 7px 0 var(--d);transition:transform .2s cubic-bezier(.25,.8,.35,1),box-shadow .25s ease}
 .ans.tabun{--c:var(--tabun);--d:var(--tabun-deep);--k:var(--tabun-ink)}
@@ -201,8 +202,8 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
 @media (min-height:820px){ .ans{padding-block:14px 12px} .ans.masu{padding-block:18px 14px} .ans.masu .t{font-size:44px} .ans .t{font-size:28px} .count .n{font-size:66px} }
 .ans:active{transform:translateY(6px);box-shadow:0 1px 0 var(--d);transition-duration:.06s}
 /* the chosen answer: pressed in, ringed and glowing; the others keep their color */
-.ans.sel{transform:translateY(7px);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--c),0 0 24px 6px color-mix(in srgb,var(--c) 45%,transparent)}
-.ans.sel:active{transform:translateY(7px) scale(.98);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--c)}
+.ans.sel{transform:translateY(7px);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--c),0 0 14px 2px color-mix(in srgb,var(--c) 40%,transparent)}
+.ans.sel:active{transform:translateY(7px) scale(.98);box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--c)}
 .ans.sel::after{content:"✓";position:absolute;z-index:3;top:-9px;right:-9px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
   background:var(--fg);color:var(--bg);font-weight:900;font-size:14px;line-height:1;box-shadow:0 0 0 3px var(--bg);animation:badge .4s cubic-bezier(.3,1.7,.5,1)}
 @keyframes badge{from{transform:scale(0) rotate(-40deg)}to{transform:none}}
@@ -228,6 +229,7 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
 
 /* members */
 .mhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;flex:none}
+.mhead h2{font-family:var(--f-body);font-weight:800;font-size:15px}
 .members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .mem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:5px 10px 5px 12px;border-radius:12px;background:var(--surface-2);border-left:5px solid var(--none)}
 .mem.masu{border-left-color:var(--masu)} .mem.tabun{border-left-color:var(--tabun)} .mem.sen{border-left-color:var(--sen)}
@@ -418,6 +420,7 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
           <div class="week" id="week" role="tablist" aria-label="今日から7日"></div>
         </div>
 
+        <p class="ans-hint" id="ansHint"></p>
         <div class="answers" id="answers">
           <button class="ans masu" data-s="masu"><span class="t">ます</span><small>行けます!</small></button>
           <button class="ans tabun" data-s="tabun"><span class="t">たぶんます</span><small>たぶん行ける</small></button>
@@ -1019,7 +1022,8 @@ function renderMain(){
     const bits = detailText(me);
     line.append(...metaNodes(me, true));
     line.append(h("button", { class:"opt-btn", onclick:() => openSheet("shDetail") }, bits ? "オプションを変える" : (me.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)")));
-  } else line.append(h("span", { text: `${dayLabel(day, true)}の返事をボタンで選んでね` }));
+  }
+  $("ansHint").textContent = me ? `${dayLabel(day)}の返事 ・ もう一度押すと取り消し` : `${dayLabel(day)}の返事をボタンで選んでね`;
 
   // members
   const order = { masu:0, tabun:1, none:2, sen:3 };
