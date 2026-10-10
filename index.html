@@ -623,6 +623,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <div class="sec">
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
   </div>
+  <div class="sec" id="creatorNote" hidden>
+    <p class="rule-hint" style="margin:0">メンバーを外す・グループを削除する操作は、グループを作った端末からだけできます。</p>
+  </div>
   <div class="sec" id="dangerSec" hidden>
     <span class="label">メンバー(作った人だけが外せます)</span>
     <ul class="mlist" id="memManage"></ul>
@@ -1338,8 +1341,9 @@ function renderSheets(){
   if (isOpen("shCal")) renderCal();
   if (isOpen("shSet")){
     $("planToggle").checked = S.group.showPlan;
-    const creator = !!S.group.createdBy && (S.group.createdBy === S.me || S.group.createdBy === S.uid);
+    const creator = !!S.group.createdBy && S.group.createdBy === S.uid;
     $("dangerSec").hidden = !creator;
+    $("creatorNote").hidden = creator || S.group.createdBy !== S.me;
     if (creator) renderMemManage();
   }
   if (isOpen("shSet")) renderColorPick();
