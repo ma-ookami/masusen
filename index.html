@@ -307,8 +307,11 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
 .cond .ck{display:none;font-weight:900}
 .cond.on{border-color:var(--st);background:var(--st);color:var(--st-ink)}
 .cond.on .ck{display:inline}
-.cond-groups{display:flex;flex-direction:column;gap:8px}
-.cond-group{display:flex;flex-direction:column;gap:6px}
+.cond3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cond3 .cond{position:relative;justify-content:center;text-align:center;padding:8px 4px;font-size:12.5px;white-space:nowrap;min-width:0}
+.cond3 .cond>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.cond3 .cond .ck{position:absolute;top:-6px;right:-3px;width:17px;height:17px;border-radius:50%;place-items:center;font-size:10px;background:var(--fg);color:var(--bg);box-shadow:0 0 0 2px var(--surface)}
+.cond3 .cond.on .ck{display:grid}
 .cond.g{background:color-mix(in srgb,var(--g) 12%,var(--surface));border-color:color-mix(in srgb,var(--g) 35%,var(--line))}
 .opt-panel .cond.g.on{background:color-mix(in srgb,var(--g) 45%,var(--surface));border-color:var(--g);color:var(--fg)}
 .opt-panel .chip.on{background:var(--st);color:var(--st-ink);border-color:var(--st)}
@@ -585,10 +588,12 @@ const SEN_GROUPS = [
 const SEN_TAGS = SEN_GROUPS.flatMap(g => g.tags);
 const COND_GROUPS = [
   { color:"var(--tmrw)", tags:["眠くなければ","元気があれば"] },
-  { color:"var(--wd3)", tags:["ご飯のあとなら","仕事・用事が終われば","家族が寝たら"] },
-  { color:"var(--coral)", tags:["遅れるかも","途中から参加","途中で抜けるかも","少しだけ","聞き専(通話のみ)"] },
+  { color:"var(--wd3)", tags:["ご飯のあと","用事が済んだら","家族が寝たら"] },
+  { color:"var(--coral)", tags:["遅れるかも","途中から参加","途中抜けあり","少しだけ","聞き専"] },
 ];
 const CONDS = COND_GROUPS.flatMap(g => g.tags);
+// earlier, longer names of the same tags
+const TAG_RENAMES = { "ご飯のあとなら":"ご飯のあと", "仕事・用事が終われば":"用事が済んだら", "途中で抜けるかも":"途中抜けあり", "聞き専(通話のみ)":"聞き専" };
 const hourLabel = h => (h % 24) + "時";
 const DOW = ["日","月","火","水","木","金","土"];
 const RATIOS = {
@@ -646,7 +651,7 @@ const clamp = (v, lo, hi, d) => { const n = num(v); return n == null ? d : Math.
 function cleanAnswer(d){
   if (!d || !STATUSES[d.status] || typeof d.day !== "string") return null;
   return { uid:str(d.uid,200), day:str(d.day,10), month:str(d.month,7) || str(d.day,7), status:d.status,
-    from:num(d.from), until:num(d.until), game:str(d.game,24), conds:Array.isArray(d.conds) ? d.conds.filter(c => (d.status === "sen" ? SEN_TAGS : CONDS).includes(c)).slice(0, 8) : [], comment:str(d.comment,40), cutoff:num(d.cutoff), updatedAt:num(d.updatedAt)||0 };
+    from:num(d.from), until:num(d.until), game:str(d.game,24), conds:Array.isArray(d.conds) ? d.conds.map(c => TAG_RENAMES[c] || c).filter(c => (d.status === "sen" ? SEN_TAGS : CONDS).includes(c)).slice(0, 8) : [], comment:str(d.comment,40), cutoff:num(d.cutoff), updatedAt:num(d.updatedAt)||0 };
 }
 function cleanRule(d){
   const rule = ["count","ratio","open"].includes(d && d.rule) ? d.rule : "count";
@@ -1145,9 +1150,8 @@ function renderSheets(){
     const condBtn = (c, color) => h("button", { type:"button", class:"cond" + (color ? " g" : "") + (conds.includes(c) ? " on" : ""), style: color ? `--g:${color}` : null,
       "aria-pressed":String(conds.includes(c)),
       onclick: () => saveMine({ conds: conds.includes(c) ? conds.filter(x => x !== c) : [...conds, c] }) }, h("span", { class:"ck", text:"✓" }), h("span", { text:c }));
-    $("condChips").className = "cond-groups";
-    $("condChips").replaceChildren(...((going ? COND_GROUPS : SEN_GROUPS).map(g => h("div", { class:"cond-group", style:`--g:${g.color}` },
-          h("div", { class:"cond-grid" }, g.tags.map(c => condBtn(c, g.color)))))));
+    $("condChips").className = "cond3";
+    $("condChips").replaceChildren(...(going ? COND_GROUPS : SEN_GROUPS).flatMap(g => g.tags.map(c => condBtn(c, g.color))));
     const recent = {};
     Object.values(S.answers).forEach(a => { if (a.game) recent[a.game] = (recent[a.game] || 0) + 1; });
     const games = Object.keys(recent).sort((a,b) => recent[b] - recent[a]).slice(0, 8);
