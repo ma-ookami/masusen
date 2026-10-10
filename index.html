@@ -263,6 +263,12 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .mem .nm .nm-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mem .nm em{flex:none;margin-left:0}
 .av{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;line-height:1;color:#fff;background:hsl(var(--h) 55% 44%)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{width:34px;height:34px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:hsl(var(--h) 55% 44%);transition:transform .1s}
+.swatch:active{transform:scale(.92)}
+.swatch.on{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--fg)}
+.by-line{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 0;font-weight:800;color:var(--fg)}
+.by-line .lbl{font-size:12px;color:var(--muted);font-weight:700}
 .chip.with-av{display:inline-flex;align-items:center;gap:6px;padding-left:6px}
 .mlist li .who{display:flex;align-items:center;gap:8px;min-width:0}
 .mem .nm em{font-style:normal;font-size:11px;color:var(--muted);font-weight:700;margin-left:6px}
@@ -384,7 +390,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <div class="logo" aria-label="ますせん"><span class="m">ます</span><span class="s">せん</span></div>
     <div class="grp">
       <button class="grp-btn" id="grpBtn" hidden><span id="grpName"></span></button>
-      <button class="icon-btn" id="shareBtn" hidden aria-label="共有" title="共有">📋</button>
+      <button class="icon-btn" id="shareBtn" hidden aria-label="招待リンクをコピー" title="招待リンクをコピー">🔗</button>
       <button class="icon-btn" id="calBtn" hidden aria-label="カレンダー" title="カレンダー">📅</button>
       <button class="icon-btn" id="setBtn" hidden aria-label="設定" title="設定">⚙</button>
     </div>
@@ -428,6 +434,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <div class="hero">
       <p class="label">グループに招待されています</p>
       <p class="big" style="font-size:clamp(32px,9vw,48px)" id="joinGroupName"></p>
+      <p class="by-line" id="joinBy" hidden></p>
       <p id="joinCount"></p>
     </div>
     <div class="card stack" id="claimCard" hidden>
@@ -551,17 +558,6 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <button class="linkbtn" id="ovReset" hidden>いつものルールにもどす</button>
 </div></div>
 
-<!-- share sheet -->
-<div class="sheet" id="shShare" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="shTitle">
-  <div class="grab"></div>
-  <div class="sh"><h2 id="shTitle">コピーしてLINE・Discordに貼る</h2><button class="x" data-close aria-label="閉じる">✕</button></div>
-  <div class="share-list">
-    <button class="btn" id="copyMine">自分の返事<small id="copyMineSub"></small></button>
-    <button class="btn" id="copyWeek">自分の1週間の予定<small>今日から7日分</small></button>
-    <button class="btn" id="copyNudge">まだの人に声かけ<small id="nudgeSub"></small></button>
-    <button class="btn" id="copyLink">招待リンク<small id="linkText" style="overflow-wrap:anywhere"></small></button>
-  </div>
-</div></div>
 
 <!-- calendar sheet -->
 <div class="sheet" id="shCal" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="calTitle">
@@ -583,6 +579,8 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <form class="sec" id="renameForm" style="border:0;padding:0">
     <span class="label">自分の名前</span>
     <div class="inline"><input class="input" id="rName" maxlength="16" required><button class="btn">変更</button></div>
+    <span class="label" style="margin-top:6px">アイコンの色</span>
+    <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
   </form>
   <div class="sec">
     <span class="label">開催のルール(メンバーならだれでも変えられます)</span>
@@ -787,7 +785,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.collection("members").onSnapshot(snap => {
     if (S.gid !== gid) return;
     const m = {};
-    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0 }; });
+    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 11, null) }; });
     S.members = m;
     if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
     render();
@@ -887,9 +885,21 @@ function detailText(a){
   return [timeText(a), cutText(a), (a.conds || []).join("・"), a.game ? "🎮 " + a.game : "", a.comment ? "「" + a.comment + "」" : ""].filter(Boolean).join(" ・ ");
 }
 // 12 well-spaced hues; the member id picks one
-function avatar(id, name){
+function colorIndex(id){
+  const m = S.members[id];
+  if (m && m.color != null) return m.color;
   let x = 0; for (const ch of String(id)) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
-  return h("span", { class:"av", style:`--h:${(x % 12) * 30}`, "aria-hidden":"true", text:[...(name || "?")][0] });
+  return x % 12;
+}
+function avatar(id, name){
+  return h("span", { class:"av", style:`--h:${colorIndex(id) * 30}`, "aria-hidden":"true", text:[...(name || "?")][0] });
+}
+function renderColorPick(){
+  const mid = (S.me || S.uid), m = S.members[mid]; if (!m) return;
+  const cur = colorIndex(mid), ch = [...(m.name || "?")][0];
+  $("colorPick").replaceChildren(...Array.from({ length:12 }, (_, i) => h("button", { type:"button", class:"swatch" + (i === cur ? " on" : ""),
+    style:`--h:${i * 30}`, role:"radio", "aria-checked":String(i === cur), "aria-label":`色${i + 1}`,
+    onclick:() => saveColor(i) }, ch)));
 }
 function metaNodes(a, withStatusClass){
   if (!a) return [];
@@ -1055,6 +1065,9 @@ function renderHome(){
 let claimSel = null;
 function renderJoin(){
   $("joinGroupName").textContent = S.group.name;
+  const cid = S.group.createdBy, creator = cid && S.members[cid];
+  $("joinBy").hidden = !creator;
+  if (creator) $("joinBy").replaceChildren(h("span", { class:"lbl", text:"作った人" }), avatar(cid, creator.name), h("span", { text:creator.name }));
   const n = Object.keys(S.members).length;
   const ids = Object.keys(S.members).sort((a, b) => S.members[a].joinedAt - S.members[b].joinedAt);
   if (claimSel && !S.members[claimSel]) claimSel = null;
@@ -1246,12 +1259,6 @@ function renderSheets(){
     $("commentForm").hidden = !showC; $("commentOpen").hidden = showC;
     $("commentInput").placeholder = going ? "ご飯食べたら行く" : "また明日誘って!";
   }
-  if (isOpen("shShare")){
-    $("copyMineSub").textContent = me ? `${relLabel(day)}:${STATUSES[me.status].label}${timeText(me) ? " " + timeText(me) : ""}` : `${relLabel(day)}はまだ返事していません`;
-    const pending = Object.keys(S.members).filter(id => !answersFor(day)[id]);
-    $("nudgeSub").textContent = pending.length ? `${relLabel(day)}まだの人 ${pending.length}人` : `${relLabel(day)}は全員返事ずみ`;
-    $("linkText").textContent = linkFor(S.gid);
-  }
   if (isOpen("shOverride")){
     const ov = S.overrides[day];
     $("ovTitle").textContent = `${dayLabel(day)}の開催ルール`;
@@ -1267,6 +1274,7 @@ function renderSheets(){
     $("dangerSec").hidden = !creator;
     if (creator) renderMemManage();
   }
+  if (isOpen("shSet")) renderColorPick();
   if (isOpen("shSet") && document.activeElement !== $("rName") && !$("rName").dataset.dirty) $("rName").value = S.members[S.me].name;
 }
 
@@ -1320,31 +1328,6 @@ async function renderCal(){
   $("popList").replaceChildren(...pg.slice(0, 3).map(g => h("li", { text: `${g} ${gc[g]}票` })));
 }
 
-// ---------- share texts ----------
-function answerLine(a){
-  if (a.status === "sen") return "せん";
-  return STATUSES[a.status].label + (timeText(a) ? " " + timeText(a) : "") + (cutText(a) ? `(${cutText(a)})` : "") + ((a.conds || []).length ? `(${a.conds.join("・")})` : "") + (a.game ? `(${a.game})` : "");
-}
-function mineText(){
-  const me = mineOn(S.sel), head = `【${S.group.name}】`, when = relLabel(S.sel);
-  if (!me) return `${head}${when}どうする?\n${linkFor(S.gid)}`;
-  let line = me.status === "sen" ? `${when}はせん…また今度!` : `${when}${me.status === "masu" ? "ます!" : "たぶんます!"}${timeText(me)}` + (cutText(me) ? `(${cutText(me)})` : "") + ((me.conds || []).length ? `(${me.conds.join("・")})` : "") + (me.game ? `(${me.game}やりたい)` : "");
-  if (me.comment) line += ` ${me.comment}`;
-  return `${head}${line}\n${linkFor(S.gid)}`;
-}
-function weekText(){
-  const lines = weekDays().map(d => { const a = mineOn(d); return `${dayLabel(d, true)} ${a ? answerLine(a) : "未定"}`; });
-  return `【${S.group.name}】今週の予定\n${lines.join("\n")}\n${linkFor(S.gid)}`;
-}
-function planLine(day){ const p = S.group.showPlan && S.plans[day]; return p ? `${relLabel(day)}やること:${p.text}\n` : ""; }
-function nudgeText(){
-  const day = S.sel, ans = answersFor(day), ids = Object.keys(S.members), r = needFor(day);
-  const pending = ids.filter(id => !ans[id]).map(id => S.members[id].name + "さん");
-  const masuN = ids.filter(id => isMasu(ans[id])).length;
-  const who = pending.length ? `まだの人:${pending.join("・")}\n` : "";
-  return `【${S.group.name}】${relLabel(day)}いける?ボタン押すだけで返事できるよ\n${planLine(day)}${who}いま ます ${masuN}/${r.need}人\n${linkFor(S.gid)}`;
-}
-
 // ---------- navigation ----------
 function go(gid){
   try { history.replaceState(null, "", gid ? "#" + gid : location.pathname + location.search); } catch {}
@@ -1372,7 +1355,7 @@ $("reloadBtn").addEventListener("click", async () => {
 $("errHome").addEventListener("click", () => { S.fatal = null; go(null); });
 $("grpBtn").addEventListener("click", () => go(null));
 $("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rName").dataset.dirty; openSheet("shSet"); });
-$("shareBtn").addEventListener("click", () => openSheet("shShare"));
+$("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
 
 const cPicker = rulePicker($("cRule"), () => 0);
@@ -1396,9 +1379,16 @@ $("createForm").addEventListener("submit", async e => {
 
 async function saveName(name){
   const mid = S.me || S.uid, prev = S.members[mid], joinedAt = prev ? prev.joinedAt : Date.now();
-  await withRetry(() => S.db.doc(`groups/${S.gid}/members/${mid}`).set({ name, joinedAt }));
+  const color = prev && prev.color != null ? prev.color : null;
+  await withRetry(() => S.db.doc(`groups/${S.gid}/members/${mid}`).set(color != null ? { name, joinedAt, color } : { name, joinedAt }));
   ls.set("name", name);
-  S.members = { ...S.members, [mid]: { name, joinedAt } };
+  S.members = { ...S.members, [mid]: { name, joinedAt, color } };
+}
+async function saveColor(i){
+  const mid = S.me || S.uid, prev = S.members[mid]; if (!prev) return;
+  S.members = { ...S.members, [mid]: { ...prev, color:i } }; render();
+  try { await withRetry(() => S.db.doc(`groups/${S.gid}/members/${mid}`).set({ name:prev.name, joinedAt:prev.joinedAt, color:i })); }
+  catch (err){ onWriteError(err); }
 }
 $("claimBtn").addEventListener("click", async () => {
   const mid = claimSel; if (!mid || !S.members[mid]) return;
@@ -1563,10 +1553,6 @@ $("ovReset").addEventListener("click", async () => {
   toast("いつものルールにもどしました");
 });
 
-$("copyMine").addEventListener("click", () => copy(mineText(), "返事の文面をコピーしました"));
-$("copyWeek").addEventListener("click", () => copy(weekText(), "1週間の予定をコピーしました"));
-$("copyNudge").addEventListener("click", () => copy(nudgeText(), "声かけの文面をコピーしました"));
-$("copyLink").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました"));
 $("calPrev").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMonth, -1); renderCal(); });
 $("calNext").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMonth, 1); renderCal(); });
 
