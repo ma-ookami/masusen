@@ -87,6 +87,12 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.danger{background:transparent;color:var(--danger);border-color:color-mix(in srgb,var(--danger) 55%,var(--line))}
 .btn.danger.armed{background:var(--danger);color:#fff;border-color:var(--danger)}
+.claim-chips .chip.on{background:var(--masu);color:var(--masu-ink);border-color:var(--masu)}
+.mlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.mlist li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 10px;border-radius:10px;background:var(--surface-2);font-weight:700}
+.mlist li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mlist .rm{flex:none;border:1px solid color-mix(in srgb,var(--danger) 55%,var(--line));background:transparent;color:var(--danger);border-radius:999px;padding:3px 12px;font-size:12px;font-weight:800}
+.mlist .rm.armed{background:var(--danger);color:#fff}
 .linkbtn{background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;padding:4px}
 .stack{display:flex;flex-direction:column;gap:14px}
 .row{display:flex;flex-direction:column;gap:8px}
@@ -402,8 +408,14 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
       <p class="big" style="font-size:clamp(32px,9vw,48px)" id="joinGroupName"></p>
       <p id="joinCount"></p>
     </div>
+    <div class="card stack" id="claimCard" hidden>
+      <span class="label">前に参加したことがある人は、自分の名前をタップ</span>
+      <div class="chips claim-chips" id="claimChips"></div>
+      <button type="button" class="btn primary" id="claimBtn" hidden></button>
+      <p class="rule-hint" style="margin:0">別のスマホやブラウザで開いたときに使います。前の返事もそのまま引き継がれます。</p>
+    </div>
     <form class="card stack" id="joinForm">
-      <label class="field"><span class="label">あなたの名前(みんなに表示されます)</span>
+      <label class="field"><span class="label" id="jLabel">あなたの名前(みんなに表示されます)</span>
         <input class="input" id="jName" maxlength="16" placeholder="例:たろう" required autocomplete="nickname"></label>
       <button class="btn primary" id="jSubmit">参加する</button>
     </form>
@@ -564,6 +576,9 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
   </div>
   <div class="sec" id="dangerSec" hidden>
+    <span class="label">メンバー(作った人だけが外せます)</span>
+    <ul class="mlist" id="memManage"></ul>
+    <p class="rule-hint">同じ人が2人いるときなどに使います。外した人の返事も消えます。</p>
     <button class="btn danger" id="delBtn">このグループを削除する</button>
     <p class="rule-hint" id="delHint">作った人だけが削除できます。返事や記録もすべて消え、元に戻せません。</p>
   </div>
@@ -722,7 +737,7 @@ function onSubError(e){
 }
 function openGroup(gid){
   stopSubs(); closeSheets();
-  Object.assign(S, { gid, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"" });
+  Object.assign(S, { gid, me:null, linkMid:null, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"" });
   planEditing = false;
   S.day = gameDay(); S.sel = S.day; S.month = S.day.slice(0, 7); S.calMonth = S.month;
   render();
@@ -743,7 +758,16 @@ function openGroup(gid){
     const m = {};
     snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0 }; });
     S.members = m;
-    if (!snap.metadata.fromCache || m[S.uid]) S.membersLoaded = true; else settle("membersLoaded");
+    if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
+    render();
+  }, onSubError));
+
+  // which member this browser acts as, when it isn't the browser that joined
+  S.unsubs.push(g.collection("links").doc(S.uid).onSnapshot(snap => {
+    if (S.gid !== gid) return;
+    const d = snap.exists ? snap.data() : null;
+    S.linkMid = d && typeof d.mid === "string" ? d.mid : null;
+    if (!snap.metadata.fromCache || d) S.linkLoaded = true; else settle("linkLoaded");
     render();
   }, onSubError));
 
@@ -825,7 +849,7 @@ function answersFor(day){
 const isMasu = a => !!a && a.status === "masu";
 const isTabun = a => !!a && a.status === "tabun";
 function masuCount(day){ let c = 0; for (const k in S.answers){ const a = S.answers[k]; if (a.day === day && isMasu(a) && S.members[a.uid]) c++; } return c; }
-const myKey = day => day + "_" + S.uid;
+const myKey = day => day + "_" + S.me;
 const mineOn = day => S.answers[myKey(day)] || null;
 function detailText(a){
   if (!a) return "";
@@ -882,7 +906,7 @@ function rulePicker(root, memberCount){
 // ---------- actions ----------
 function buildAnswer(day, patch){
   const cur = S.answers[myKey(day)] || { game:"", comment:"", from:null, until:null, conds:[] };
-  const next = { ...cur, ...patch, uid:S.uid, day, month:day.slice(0, 7), updatedAt:Date.now() };
+  const next = { ...cur, ...patch, uid:S.me, day, month:day.slice(0, 7), updatedAt:Date.now() };
   if (patch.status && (patch.status === "sen") !== (cur.status === "sen")) next.conds = [];
   if (next.status === "sen"){ next.from = null; next.until = null; next.game = ""; next.cutoff = null; }
   return next;
@@ -976,8 +1000,9 @@ function render(){
     $("errHome").hidden = false; inGroup(false); return show("sError");
   }
   $("grpName").textContent = S.group.name;
-  if (!S.membersLoaded) return show("sLoading");
-  if (!S.members[S.uid]){ inGroup(false); renderJoin(); return show("sJoin"); }
+  if (!S.membersLoaded || !S.linkLoaded) return show("sLoading");
+  S.me = S.members[S.uid] ? S.uid : (S.linkMid && S.members[S.linkMid] ? S.linkMid : null);
+  if (!S.me){ inGroup(false); renderJoin(); return show("sJoin"); }
   inGroup(true);
   rememberGroup(S.gid, S.group.name);
   renderMain(); renderSheets();
@@ -991,9 +1016,18 @@ function renderHome(){
   if (!$("cMe").value) $("cMe").value = ls.get("name", "");
   $("cSubmit").disabled = S.canWrite === false;
 }
+let claimSel = null;
 function renderJoin(){
   $("joinGroupName").textContent = S.group.name;
   const n = Object.keys(S.members).length;
+  const ids = Object.keys(S.members).sort((a, b) => S.members[a].joinedAt - S.members[b].joinedAt);
+  if (claimSel && !S.members[claimSel]) claimSel = null;
+  $("claimCard").hidden = !n;
+  $("claimChips").replaceChildren(...ids.map(id => h("button", { type:"button", class:"chip" + (claimSel === id ? " on" : ""), "aria-pressed":String(claimSel === id),
+    onclick:() => { claimSel = claimSel === id ? null : id; renderJoin(); } }, S.members[id].name)));
+  $("claimBtn").hidden = !claimSel;
+  if (claimSel) $("claimBtn").textContent = `${S.members[claimSel].name}として入る`;
+  $("jLabel").textContent = n ? "はじめての人は名前を入れて参加" : "あなたの名前(みんなに表示されます)";
   $("joinCount").textContent = (n ? `${n}人が参加中・` : "") + ruleText(S.group, n);
   if (document.activeElement !== $("jName") && !$("jName").value) $("jName").value = ls.get("name", "");
   $("jSubmit").disabled = S.canWrite === false;
@@ -1068,7 +1102,7 @@ function renderMain(){
     const a = today[id], st = stOf(a), m = S.members[id];
     const meta = metaNodes(a);
     return h("li", { class: "mem " + st },
-      h("div", { class:"nm" }, m.name, id === S.uid ? h("em", { text:"あなた" }) : null),
+      h("div", { class:"nm" }, m.name, id === S.me ? h("em", { text:"あなた" }) : null),
       h("span", { class:"st " + (a ? st : ""), text: a ? `${STATUSES[st].ic} ${STATUSES[st].label}` : "… 未回答" }),
       meta.length ? h("div", { class:"meta" }, meta) : null);
   }));
@@ -1101,9 +1135,9 @@ function savePlan(text){
   if (S.canWrite === false) return toast("このページは閲覧のみです", true);
   const day = S.sel, t = (text || "").trim().slice(0, 30);
   const p = { ...S.plans };
-  if (t) p[day] = { text:t, by:S.uid }; else delete p[day];
+  if (t) p[day] = { text:t, by:S.me }; else delete p[day];
   S.plans = p; planEditing = false; renderPlan();
-  writeDoc(S.db.doc(`groups/${S.gid}/plans/${day}`), t ? { text:t, day, by:S.uid, at:Date.now() } : null);
+  writeDoc(S.db.doc(`groups/${S.gid}/plans/${day}`), t ? { text:t, day, by:S.me, at:Date.now() } : null);
   toast(t ? `${relLabel(day)}やること:${t}` : "未定にもどしました");
 }
 $("planView").addEventListener("click", () => {
@@ -1192,9 +1226,11 @@ function renderSheets(){
   if (isOpen("shCal")) renderCal();
   if (isOpen("shSet")){
     $("planToggle").checked = S.group.showPlan;
-    $("dangerSec").hidden = !S.group.createdBy || S.group.createdBy !== S.uid;
+    const creator = !!S.group.createdBy && (S.group.createdBy === S.me || S.group.createdBy === S.uid);
+    $("dangerSec").hidden = !creator;
+    if (creator) renderMemManage();
   }
-  if (isOpen("shSet") && document.activeElement !== $("rName") && !$("rName").dataset.dirty) $("rName").value = S.members[S.uid].name;
+  if (isOpen("shSet") && document.activeElement !== $("rName") && !$("rName").dataset.dirty) $("rName").value = S.members[S.me].name;
 }
 
 async function renderCal(){
@@ -1308,11 +1344,23 @@ $("createForm").addEventListener("submit", async e => {
 });
 
 async function saveName(name){
-  const prev = S.members[S.uid], joinedAt = prev ? prev.joinedAt : Date.now();
-  await withRetry(() => S.db.doc(`groups/${S.gid}/members/${S.uid}`).set({ name, joinedAt }));
+  const mid = S.me || S.uid, prev = S.members[mid], joinedAt = prev ? prev.joinedAt : Date.now();
+  await withRetry(() => S.db.doc(`groups/${S.gid}/members/${mid}`).set({ name, joinedAt }));
   ls.set("name", name);
-  S.members = { ...S.members, [S.uid]: { name, joinedAt } };
+  S.members = { ...S.members, [mid]: { name, joinedAt } };
 }
+$("claimBtn").addEventListener("click", async () => {
+  const mid = claimSel; if (!mid || !S.members[mid]) return;
+  const b = $("claimBtn"); b.disabled = true;
+  try {
+    await withRetry(() => S.db.doc(`groups/${S.gid}/links/${S.uid}`).set({ mid, at:Date.now() }));
+    S.linkMid = mid; claimSel = null;
+    ls.set("name", S.members[mid].name);
+    render();
+    toast(`${S.members[mid].name}として入りました`);
+  } catch (err){ onWriteError(err); }
+  finally { b.disabled = false; }
+});
 $("joinForm").addEventListener("submit", async e => {
   e.preventDefault();
   const name = $("jName").value.trim(); if (!name) return;
@@ -1358,10 +1406,37 @@ $("delBtn").addEventListener("click", async () => {
     openGroup(gid);
   }
 });
+let rmArmed = null, rmTimer = null;
+function renderMemManage(){
+  const ids = Object.keys(S.members).sort((a, b) => S.members[a].joinedAt - S.members[b].joinedAt);
+  $("memManage").replaceChildren(...ids.map(id => h("li", null,
+    h("span", { text: S.members[id].name + (id === S.me ? "(あなた)" : "") }),
+    id === S.me ? null : h("button", { type:"button", class:"rm" + (rmArmed === id ? " armed" : ""), onclick:() => removeMember(id) }, rmArmed === id ? "本当に外す" : "外す"))));
+}
+async function removeMember(mid){
+  if (rmArmed !== mid){
+    rmArmed = mid; clearTimeout(rmTimer);
+    rmTimer = setTimeout(() => { rmArmed = null; if (isOpen("shSet")) renderMemManage(); }, 5000);
+    renderMemManage(); return;
+  }
+  clearTimeout(rmTimer); rmArmed = null;
+  const gid = S.gid, name = S.members[mid] ? S.members[mid].name : "";
+  try {
+    const paths = [];
+    const ans = await withRetry(() => S.db.collection(`groups/${gid}/answers`).where("uid", "==", mid).get());
+    ans.docs.forEach(d => paths.push(`groups/${gid}/answers/${d.id}`));
+    const links = await withRetry(() => S.db.collection(`groups/${gid}/links`).where("mid", "==", mid).get());
+    links.docs.forEach(d => paths.push(`groups/${gid}/links/${d.id}`));
+    paths.push(`groups/${gid}/members/${mid}`);
+    await S.db.deleteMany(paths);
+    toast(`${name}をグループから外しました`);
+  } catch (err){ onWriteError(err); }
+  if (isOpen("shSet")) renderMemManage();
+}
 async function deleteGroup(gid){
   stopSubs();
   const paths = [];
-  for (const sub of ["answers", "overrides", "plans", "members"]){
+  for (const sub of ["answers", "overrides", "plans", "links", "members"]){
     const snap = await withRetry(() => S.db.collection(`groups/${gid}/${sub}`).get());
     snap.docs.forEach(d => paths.push(`groups/${gid}/${sub}/${d.id}`));
   }
@@ -1428,7 +1503,7 @@ $("ovPlus").addEventListener("click", () => setOv(ovN + 1));
 $("ovSave").addEventListener("click", async () => {
   const day = S.sel;
   S.overrides = { ...S.overrides, [day]: ovN }; closeSheets(); render();
-  await writeDoc(S.db.doc(`groups/${S.gid}/overrides/${day}`), { need:ovN, day, by:S.uid, at:Date.now() });
+  await writeDoc(S.db.doc(`groups/${S.gid}/overrides/${day}`), { need:ovN, day, by:S.me, at:Date.now() });
   toast(`${relLabel(day)}は${ovN}人でやることにしました`);
 });
 $("ovReset").addEventListener("click", async () => {
