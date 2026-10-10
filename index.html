@@ -112,6 +112,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 /* one-screen fit (main screen only) */
 html,body{height:100%}
 body{overflow-x:clip}
+@supports not (overflow-x:clip){ html,body{overflow-x:hidden} }
 body.fit .wrap{height:100%;display:flex;flex-direction:column;padding-block:6px 10px}
 body.fit .top{padding-block:4px 8px}
 body.fit #sMain{flex:1;min-height:0;gap:10px}
@@ -130,7 +131,7 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contai
 /* scoreboard */
 .score{position:relative;overflow:hidden;padding:10px 14px 12px;flex:none}
 .score-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px}
-.score-info{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;min-width:0}
+.score-info{flex:1;display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right;min-width:0}
 .score-info .linkbtn{font-size:12px;padding:0}
 .day{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--muted)}
 .day b{color:var(--fg);font-size:15px}
@@ -142,7 +143,9 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contai
 .pip{width:13px;height:13px;border-radius:50%;border:2px solid var(--none)}
 .pip.f{background:var(--masu);border-color:var(--masu)}
 .pip.t{border-color:var(--tabun);border-style:dashed}
-.sub{font-size:12px;color:var(--muted);display:flex;justify-content:flex-end;flex-wrap:wrap;gap:2px 8px;align-items:center}
+.sub{font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:flex-end;gap:3px;max-width:100%}
+.sub>span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#scoreSub{min-height:1.5em;font-variant-numeric:tabular-nums}
 .rule-tag{font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
 .rule-tag.ov{border-color:var(--coral);color:var(--coral)}
 .fest{display:none;margin-top:8px;text-align:center;font-family:var(--f-display);font-size:19px;color:var(--masu-ink);background:var(--masu);border-radius:12px;padding:6px 10px}
@@ -154,8 +157,6 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
 /* week strip */
 .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 .week-box{display:flex;flex-direction:column;gap:6px;flex:none}
-.week-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.week-head .label{white-space:nowrap}
 .wd{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:4px 2px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;font-variant-numeric:tabular-nums;line-height:1.2}
 .wd .w{font-size:11px;color:var(--muted);font-weight:700;padding:0 6px;border-radius:999px}
 .wd.sat .w,.wd.sat .dn{color:var(--sat)} .wd.sun .w,.wd.sun .dn{color:var(--sun)}
@@ -402,8 +403,6 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
         </div>
 
         <div class="week-box">
-          <div class="week-head"><span class="label">今日から7日</span>
-            <span class="bulk"><button class="chip sm" id="fillMasu">空き日を全部ます</button><button class="chip sm" id="copyLastWeek">先週と同じ</button></span></div>
           <div class="week" id="week" role="tablist" aria-label="今日から7日"></div>
         </div>
 
@@ -835,13 +834,6 @@ function saveMine(patch, day = S.sel){
   render();
   return writeDoc(S.db.doc(`groups/${S.gid}/answers/${myKey(day)}`), next);
 }
-async function saveMany(list, msg){
-  if (S.canWrite === false) return toast("このページは閲覧のみです", true);
-  const a = { ...S.answers };
-  const docs = list.map(([day, patch]) => { const d = buildAnswer(day, patch); a[myKey(day)] = d; return [day, d]; });
-  S.answers = a; render(); toast(msg);
-  for (const [day, d] of docs) await writeDoc(S.db.doc(`groups/${S.gid}/answers/${myKey(day)}`), d);
-}
 
 function burst(btn, e){
   try { navigator.vibrate && navigator.vibrate(12); } catch {}
@@ -989,7 +981,6 @@ function renderMain(){
       h("span", { class:"c", text: held ? "★開催" : n ? `◎${n}` : "" }),
       h("span", { class: "me " + (my ? my.status : "") }));
   }));
-  $("fillMasu").hidden = ro; $("copyLastWeek").hidden = ro;
 
   // buttons
   const box = $("answers");
@@ -1309,17 +1300,6 @@ $("clearBtn").addEventListener("click", () => {
   toast("返事を取り消しました");
 });
 
-$("fillMasu").addEventListener("click", () => {
-  const list = weekDays().filter(d => !mineOn(d)).map(d => [d, { status:"masu" }]);
-  if (!list.length) return toast("7日とも返事ずみです");
-  saveMany(list, `${list.length}日分を「ます」にしました`);
-});
-$("copyLastWeek").addEventListener("click", () => {
-  const list = weekDays().map(d => [d, mineOn(addDays(d, -7))]).filter(([, a]) => a)
-    .map(([d, a]) => [d, { status:a.status, from:a.from, until:a.until, game:a.game }]);
-  if (!list.length) return toast("先週の返事が見つかりませんでした", true);
-  saveMany(list, `先週と同じ返事を${list.length}日分入れました`);
-});
 
 let ovN = 2;
 const setOv = v => { ovN = Math.max(1, Math.min(20, v)); $("ovN").textContent = ovN; };
