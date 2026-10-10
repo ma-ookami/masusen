@@ -467,7 +467,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
         <div class="answers" id="answers">
           <button class="ans masu" data-s="masu"><span class="t">ます</span><small>行けます!</small></button>
           <button class="ans tabun" data-s="tabun"><span class="t">たぶんます</span><small>たぶん行ける</small></button>
-          <button class="ans sen" data-s="sen"><span class="t">せん</span><small>無理です</small></button>
+          <button class="ans sen" data-s="sen"><span class="t">せん</span><small>行けません</small></button>
         </div>
         <div class="mine-row">
           <div class="mine-line" id="mineLine"></div>
@@ -755,17 +755,23 @@ function onWriteError(e){
 }
 
 // ---------- subscriptions ----------
-function stopSubs(){ S.unsubs.forEach(u => { try{u();}catch{} }); S.unsubs = []; }
+function stopSubs(){ S.unsubs.forEach(u => { try{u();}catch{} }); S.unsubs = []; ansUnsub = null; }
 function onSubError(e){
   if (e && e.code === "revoked") return fail("このページへのアクセスが変わりました。再読み込みしてください。");
   fail("データを読み込めませんでした。通信を確認して再読み込みしてください。");
 }
-function openGroup(gid){
-  stopSubs(); closeSheets();
+function openGroup(gid, quiet){
+  stopSubs();
+  if (quiet){
+    S.day = gameDay(); S.month = S.day.slice(0, 7);
+    if (S.sel < S.day) S.sel = S.day;
+  } else {
+  closeSheets();
   Object.assign(S, { gid, me:null, linkMid:null, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"" });
   planEditing = false;
   S.day = gameDay(); S.sel = S.day; S.month = S.day.slice(0, 7); S.calMonth = S.month;
   render();
+  }
   if (!gid) return;
   const g = S.db.doc("groups/" + gid);
   const settle = key => setTimeout(() => { if (S.gid === gid && !S[key]){ S[key] = true; render(); } }, 4000);
@@ -1349,7 +1355,20 @@ window.addEventListener("hashchange", () => { const g = hashGid(); if (g !== S.g
 
 // ---------- events ----------
 document.querySelectorAll("[data-reload]").forEach(b => b.addEventListener("click", () => location.reload()));
-$("reloadBtn").addEventListener("click", () => { $("reloadBtn").classList.add("spin"); setTimeout(() => location.reload(), 150); });
+let refreshing = false;
+$("reloadBtn").addEventListener("click", async () => {
+  if (refreshing || !S.gid) return;
+  refreshing = true;
+  const b = $("reloadBtn"); b.classList.add("spin");
+  const started = Date.now();
+  try {
+    if (await pageChanged()){ location.reload(); return; }
+    openGroup(S.gid, true);
+  } catch {}
+  await new Promise(r => setTimeout(r, Math.max(0, 700 - (Date.now() - started))));
+  b.classList.remove("spin"); refreshing = false;
+  toast("最新の状態にしました");
+});
 $("errHome").addEventListener("click", () => { S.fatal = null; go(null); });
 $("grpBtn").addEventListener("click", () => go(null));
 $("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rName").dataset.dirty; openSheet("shSet"); });
@@ -1597,8 +1616,20 @@ function makeDb(fsdb){
   return { doc: p => docRef(fsdb.doc(p)), collection: p => colRef(fsdb.collection(p)), deleteMany };
 }
 
+// ---------- new-version check (GitHub Pages) ----------
+let pageSig = null;
+const sigOf = t => { let x = 0; for (let i = 0; i < t.length; i++) x = (x * 31 + t.charCodeAt(i)) | 0; return t.length + ":" + x; };
+async function fetchSig(){
+  const r = await fetch(location.pathname, { cache:"no-store" });
+  return r.ok ? sigOf(await r.text()) : null;
+}
+async function pageChanged(){
+  try { const now = await fetchSig(); return !!(pageSig && now && now !== pageSig); } catch { return false; }
+}
+
 // ---------- boot ----------
 async function boot(){
+  fetchSig().then(x => { pageSig = x; }).catch(() => {});
   render();
   const slow = setTimeout(() => { $("slowNote").hidden = false; }, 8000);
   const cfg = window.FIREBASE_CONFIG;
