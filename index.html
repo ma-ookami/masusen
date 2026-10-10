@@ -826,11 +826,12 @@ function openGroup(gid, quiet){
   if (gid && !quiet) ls.set("last", gid);
   stopSubs();
   if (quiet){
+    S.deniedFor = null;
     S.day = gameDay(); S.month = S.day.slice(0, 7);
     if (S.sel < S.day) S.sel = S.day;
   } else {
   closeSheets();
-  Object.assign(S, { gid, me:null, linkMid:null, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"" });
+  Object.assign(S, { gid, deniedFor:null, me:null, linkMid:null, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"" });
   planEditing = false;
   S.day = gameDay(); S.sel = S.day; S.month = S.day.slice(0, 7); S.calMonth = S.month;
   render();
@@ -875,7 +876,7 @@ function stopDaySubs(){
 }
 // these reads need membership; losing it (removed by the creator) just stops them
 function daySubError(e){
-  if (e && e.code === "invalid_argument"){ stopDaySubs(); S.answers = {}; S.plans = {}; S.overrides = {}; render(); return; }
+  if (e && e.code === "invalid_argument"){ S.deniedFor = S.me; stopDaySubs(); S.answers = {}; S.plans = {}; S.overrides = {}; render(); return; }
   onSubError(e);
 }
 function subscribeAnswers(){
@@ -1146,7 +1147,7 @@ function render(){
   if (!S.membersLoaded || !S.linkLoaded) return show("sLoading");
   S.me = S.members[S.uid] ? S.uid : (S.linkMid && S.members[S.linkMid] ? S.linkMid : null);
   if (!S.me){ if (ansUnsub) stopDaySubs(); inGroup(false); renderJoin(); return show("sJoin"); }
-  if (!ansUnsub) subscribeAnswers();
+  if (!ansUnsub && S.deniedFor !== S.me) subscribeAnswers();
   inGroup(true);
   rememberGroup(S.gid, S.group.name);
   renderMain(); renderSheets();
