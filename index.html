@@ -129,7 +129,12 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 html,body{height:100%}
 body{overflow-x:clip}
 @supports not (overflow-x:clip){ html,body{overflow-x:hidden} }
-body.fit .wrap{height:100%;display:flex;flex-direction:column;padding-block:6px 10px}
+/* pin the page in place (iOS otherwise drags the whole screen); the safe-area padding moves onto the body */
+html:has(body.fit){overflow:hidden;overscroll-behavior:none}
+body.fit{position:fixed;inset:0;overflow:hidden;overscroll-behavior:none;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body.fit .wrap{height:100%;display:flex;flex-direction:column;padding-block:6px 10px;
+  overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 body.fit .top{padding-block:4px 8px}
 body.fit #sMain{flex:1;min-height:0;gap:10px}
 body.fit .main{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
@@ -137,7 +142,7 @@ body.fit .main>.col{gap:10px}
 body.fit .col-mem{flex:1;min-height:170px}
 .mem-card{display:flex;flex-direction:column;padding:12px 12px 10px}
 body.fit .mem-card{flex:1;min-height:0}
-body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 @media (min-width:880px){
   body.fit .main{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:stretch}
   body.fit .main>.col:last-child{position:static}
@@ -167,26 +172,32 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contai
 .pip.t{border-color:var(--tabun);border-style:dashed}
 .sub{font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:100%}
 .sub>span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#scoreSub{min-height:1.5em;font-variant-numeric:tabular-nums}
+#scoreSub{min-height:1.5em;font-variant-numeric:tabular-nums;font-size:14px;font-weight:800;color:var(--fg)}
+.score{transition:background .35s ease,border-color .35s ease,box-shadow .35s ease}
+.score.held{background:var(--masu);border-color:var(--masu);box-shadow:0 0 0 3px color-mix(in srgb,var(--masu) 30%,transparent),0 0 32px color-mix(in srgb,var(--masu) 30%,transparent)}
+.score.held .day b,.score.held #scoreSub,.score.held .count .n,.score.held .count .of,.score.held .count .u{color:var(--masu-ink)}
+.score.held.soft{background:color-mix(in srgb,var(--masu) 22%,var(--surface));box-shadow:none}
+.score.held.soft .day b,.score.held.soft #scoreSub,.score.held.soft .count .of,.score.held.soft .count .u{color:var(--fg)}
+.score.held.soft .count .n{color:var(--masu)}
+.score.held.pop{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .rule-tag{font-size:12px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
 .rule-tag.ov{border-color:var(--coral);color:var(--coral)}
 .fest{display:none;margin-top:8px;text-align:center;font-family:var(--f-display);font-size:19px;color:var(--masu-ink);background:var(--masu);border-radius:12px;padding:6px 10px}
 .fest.soft{background:var(--surface-2);color:var(--masu);border:2px solid var(--masu);font-size:17px}
 body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
-body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3px color-mix(in srgb,var(--masu) 35%,transparent),0 0 40px color-mix(in srgb,var(--masu) 25%,transparent)}
 @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 
 /* week strip */
 .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 .week-box{display:flex;flex-direction:column;gap:6px;flex:none}
-.wd{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:4px 2px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;font-variant-numeric:tabular-nums;line-height:1.2}
+.wd{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:3px 2px 3px;display:flex;flex-direction:column;align-items:center;gap:1px;font-variant-numeric:tabular-nums;line-height:1.2}
 .wd .w{font-size:11px;color:var(--muted);font-weight:700;padding:0 6px;border-radius:999px}
 .wd.sat .w,.wd.sat .dn{color:var(--sat)} .wd.sun .w,.wd.sun .dn{color:var(--sun)}
 .wd.today .w{background:var(--today);color:var(--today-ink)}
 .wd.tmrw .w{background:var(--tmrw);color:var(--tmrw-ink)}
 .wd.today{border-color:var(--today)} .wd.tmrw{border-color:color-mix(in srgb,var(--tmrw) 60%,var(--line))}
-.wd .dn{font-weight:800;font-size:15px}
-.wd .c{font-size:11px;color:var(--muted);min-height:1.2em}
+.wd .dn{font-weight:800;font-size:15px;line-height:1.15}
+.wd .c{font-size:10px;color:var(--muted);min-height:1.2em;line-height:1.2}
 .wd .me{width:10px;height:10px;border-radius:50%;border:1.5px dashed var(--none)}
 .wd .me.masu{background:var(--masu);border:0} .wd .me.tabun{background:var(--tabun);border:0} .wd .me.sen{background:var(--sen);border:0}
 .wd.sel{border:2px solid var(--fg);background:var(--surface-2)}
@@ -435,14 +446,12 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
           <div class="score-row">
             <div class="score-info">
               <div class="day"><b id="dayLabel"></b></div>
-              <div class="sub"><span class="rule-tag" id="ruleTag"></span><span id="scoreSub"></span></div>
+              <div class="sub"><span id="scoreSub"></span></div>
             </div>
             <div class="score-right">
               <div class="count"><span class="n" id="masuN">0</span><span class="of" id="slashN">/</span><span class="of" id="needN">4</span><span class="u" id="unitN">ます</span></div>
-              <div class="pips" id="pips" aria-hidden="true"></div>
             </div>
           </div>
-          <div class="fest" id="fest"></div>
         </div>
 
         <div class="week-box">
@@ -1062,17 +1071,19 @@ function renderMain(){
   $("masuN").textContent = masuN; $("needN").textContent = rule.need;
   $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
   $("unitN").textContent = rule.open ? "人がます" : "ます";
-  const pips = $("pips"); pips.replaceChildren();
-  for (let i = 0, total = rule.open ? ids.length : Math.max(rule.need, masuN); i < total; i++) pips.append(h("span", {class: "pip " + (i < masuN ? "f" : i < masuN + tabunN ? "t" : "")}));
-  $("ruleTag").textContent = rule.tag; $("ruleTag").classList.toggle("ov", !!rule.override);
   const rest = rule.need - masuN;
-  $("scoreSub").textContent = (rule.open ? (rest > 0 ? `あと${rest}人でやれる` : "やれる!") : (rest > 0 ? `あと${rest}人` : `${masuN}人そろった`)) + (tabunN ? `・たぶん${tabunN}人` : "");
   const fest = masuN >= rule.need && masuN > 0;
   const dayWord = day === S.day ? "今日" : day === addDays(S.day, 1) ? "明日" : "この日";
-  $("fest").textContent = rule.open ? `${dayWord}は${masuN}人でやります!` : `${dayWord}は開催です!`;
-  $("fest").classList.toggle("soft", !!rule.open);
-  document.body.classList.toggle("is-fest", fest);
-  document.body.classList.toggle("soft-fest", fest && !!rule.open);
+  let status;
+  if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
+  else if (rule.override) status = `${dayWord}だけ${rule.need}人でOK・あと${rest}人`;
+  else if (rule.open) status = `${rule.need}人いればやる・あと${rest}人`;
+  else status = `あと${rest}人で開催`;
+  $("scoreSub").textContent = status + (tabunN ? `・たぶん${tabunN}人` : "");
+  const card = $("scoreCard"), wasHeld = card.classList.contains("held");
+  card.classList.toggle("held", fest);
+  card.classList.toggle("soft", fest && !!rule.open);
+  if (fest && !wasHeld){ card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); }
   const festKey = S.gid + day;
   if (fest && !rule.open && S.prevFest !== festKey && ls.get("fest." + festKey, false) === false){ ls.set("fest." + festKey, true); confetti(); }
   S.prevFest = fest ? festKey : "";
@@ -1088,8 +1099,7 @@ function renderMain(){
       S.overrides[d] ? h("span", { class:"ov" }) : null,
       h("span", { class:"w", text: i === 0 ? "今日" : i === 1 ? "明日" : DOW[t.getUTCDay()] }),
       h("span", { class:"dn", text: t.getUTCDate() }),
-      h("span", { class:"c", text: held ? "★開催" : n ? `◎${n}` : "" }),
-      h("span", { class: "me " + (my ? my.status : "") }));
+      h("span", { class:"c", text: held ? "★開催" : n ? `◎${n}` : "" }));
   }));
 
   // buttons
