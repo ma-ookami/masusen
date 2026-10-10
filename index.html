@@ -307,6 +307,10 @@ body.is-fest:not(.soft-fest) .score{border-color:var(--masu);box-shadow:0 0 0 3p
 .cond .ck{display:none;font-weight:900}
 .cond.on{border-color:var(--st);background:var(--st);color:var(--st-ink)}
 .cond.on .ck{display:inline}
+.cond-groups{display:flex;flex-direction:column;gap:8px}
+.cond-group{display:flex;flex-direction:column;gap:6px}
+.cond.g{background:color-mix(in srgb,var(--g) 12%,var(--surface));border-color:color-mix(in srgb,var(--g) 35%,var(--line))}
+.opt-panel .cond.g.on{background:color-mix(in srgb,var(--g) 45%,var(--surface));border-color:var(--g);color:var(--fg)}
 .opt-panel .chip.on{background:var(--st);color:var(--st-ink);border-color:var(--st)}
 .opt-panel .seg.two button.on{background:var(--st);color:var(--st-ink)}
 .opt-foot{position:sticky;bottom:0;margin-inline:-16px;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -573,8 +577,18 @@ const STATUSES = { masu:{ic:"◎",label:"ます"}, tabun:{ic:"△",label:"たぶ
 const FROM_HOURS = [19,20,21,22,23,24,25,26];
 const UNTIL_HOURS = [22,23,24,25,26,27];
 const TL_HOURS = [19,20,21,22,23,24,25,26,27];
-const SEN_TAGS = ["眠い","疲れた","忙しい","明日朝早い","予定あり","別のことする","体調いまいち","用事あり","気分じゃない","また今度!"];
-const CONDS = ["眠くなければ","元気があれば","ご飯のあとなら","仕事・用事が終われば","途中から参加","途中で抜けるかも","少しだけ","聞き専(通話のみ)"];
+const SEN_GROUPS = [
+  { label:"からだ・気分", color:"var(--tmrw)", tags:["眠い","疲れた","体調いまいち","気分じゃない"] },
+  { label:"予定・用事", color:"var(--wd3)", tags:["仕事","忙しい","予定あり","用事あり","外出中","明日朝早い"] },
+  { label:"そのほか", color:"var(--coral)", tags:["明日なら","別のことする","また今度!"] },
+];
+const SEN_TAGS = SEN_GROUPS.flatMap(g => g.tags);
+const COND_GROUPS = [
+  { color:"var(--tmrw)", tags:["眠くなければ","元気があれば"] },
+  { color:"var(--wd3)", tags:["ご飯のあとなら","仕事・用事が終われば","家族が寝たら"] },
+  { color:"var(--coral)", tags:["遅れるかも","途中から参加","途中で抜けるかも","少しだけ","聞き専(通話のみ)"] },
+];
+const CONDS = COND_GROUPS.flatMap(g => g.tags);
 const hourLabel = h => (h % 24) + "時";
 const DOW = ["日","月","火","水","木","金","土"];
 const RATIOS = {
@@ -1020,7 +1034,6 @@ function renderMain(){
   const line = $("mineLine"); line.replaceChildren();
   if (me){
     const bits = detailText(me);
-    line.append(...metaNodes(me, true));
     line.append(h("button", { class:"opt-btn", onclick:() => openSheet("shDetail") }, bits ? "オプションを変える" : (me.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)")));
   }
   $("ansHint").textContent = me ? `${dayLabel(day)}の返事 ・ もう一度押すと取り消し` : `${dayLabel(day)}の返事をボタンで選んでね`;
@@ -1129,8 +1142,12 @@ function renderSheets(){
         : u == null ? "続けて終わりの時間もタップできます(なくてもOK)" : "数字をタップすると選び直せます";
     }
     const conds = me.conds || [];
-    $("condChips").replaceChildren(...(going ? CONDS : SEN_TAGS).map(c => h("button", { type:"button", class:"cond" + (conds.includes(c) ? " on" : ""), "aria-pressed":String(conds.includes(c)),
-      onclick: () => saveMine({ conds: conds.includes(c) ? conds.filter(x => x !== c) : [...conds, c] }) }, h("span", { class:"ck", text:"✓" }), h("span", { text:c }))));
+    const condBtn = (c, color) => h("button", { type:"button", class:"cond" + (color ? " g" : "") + (conds.includes(c) ? " on" : ""), style: color ? `--g:${color}` : null,
+      "aria-pressed":String(conds.includes(c)),
+      onclick: () => saveMine({ conds: conds.includes(c) ? conds.filter(x => x !== c) : [...conds, c] }) }, h("span", { class:"ck", text:"✓" }), h("span", { text:c }));
+    $("condChips").className = "cond-groups";
+    $("condChips").replaceChildren(...((going ? COND_GROUPS : SEN_GROUPS).map(g => h("div", { class:"cond-group", style:`--g:${g.color}` },
+          h("div", { class:"cond-grid" }, g.tags.map(c => condBtn(c, g.color)))))));
     const recent = {};
     Object.values(S.answers).forEach(a => { if (a.game) recent[a.game] = (recent[a.game] || 0) + 1; });
     const games = Object.keys(recent).sort((a,b) => recent[b] - recent[a]).slice(0, 8);
