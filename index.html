@@ -456,6 +456,10 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <div class="card stack" id="claimCard" hidden>
       <span class="label">前に参加したことがある人は、自分の名前をタップ</span>
       <div class="chips claim-chips" id="claimChips"></div>
+      <div class="field" id="claimPinRow" hidden>
+        <span class="label">合言葉(数字4桁)</span>
+        <input class="input" id="claimPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off">
+      </div>
       <button type="button" class="btn primary" id="claimBtn" hidden></button>
       <p class="rule-hint" style="margin:0">別のスマホやブラウザで開いたときに使います。前の返事もそのまま引き継がれます。</p>
     </div>
@@ -598,6 +602,12 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <span class="label" style="margin-top:6px">アイコンの色</span>
     <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
   </form>
+  <form class="sec" id="pinForm">
+    <span class="label">合言葉(数字4桁・任意)</span>
+    <div class="inline"><input class="input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="例:0000 以外の4桁"><button class="btn" id="pinSave">設定</button></div>
+    <p class="rule-hint" style="margin:0" id="pinHint">設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。</p>
+    <button type="button" class="linkbtn" id="pinClear" hidden>合言葉を解除する</button>
+  </form>
   <div class="sec">
     <span class="label">開催のルール(メンバーならだれでも変えられます)</span>
     <div id="gRule" class="stack"></div>
@@ -635,14 +645,14 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   </div>
 </div></div>
 
-<div class="offline" id="offline" role="status" hidden>接続が切れています。つながると自動で反映されます</div>
+<div class="offline" id="offline" role="status" hidden>接続が切れています。押した返事は、つながるまで画面を閉じずに待つと保存されます</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 (() => {
@@ -748,7 +758,7 @@ const clamp = (v, lo, hi, d) => { const n = num(v); return n == null ? d : Math.
 function cleanAnswer(d){
   if (!d || !STATUSES[d.status] || typeof d.day !== "string") return null;
   return { uid:str(d.uid,200), day:str(d.day,10), month:str(d.month,7) || str(d.day,7), status:d.status,
-    from:num(d.from), until:num(d.until), game:str(d.game,24), conds:Array.isArray(d.conds) ? d.conds.map(c => TAG_RENAMES[c] || c).filter(c => (d.status === "sen" ? SEN_TAGS : CONDS).includes(c)).slice(0, 8) : [], comment:str(d.comment,40), cutoff:num(d.cutoff), updatedAt:num(d.updatedAt)||0 };
+    from:num(d.from), until:num(d.until), game:str(d.game,24), conds:Array.isArray(d.conds) ? d.conds.map(c => TAG_RENAMES[c] || c).filter(c => (d.status === "sen" ? SEN_TAGS : CONDS).includes(c)).slice(0, 16) : [], comment:str(d.comment,40), cutoff:num(d.cutoff), updatedAt:num(d.updatedAt)||0 };
 }
 function cleanRule(d){
   const rule = ["count","ratio","open"].includes(d && d.rule) ? d.rule : "count";
@@ -840,7 +850,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.collection("members").onSnapshot(snap => {
     if (S.gid !== gid) return;
     const m = {};
-    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 11, null) }; });
+    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 11, null), hasPin:d.hasPin === true }; });
     S.members = m;
     if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
     render();
@@ -855,11 +865,20 @@ function openGroup(gid, quiet){
     render();
   }, onSubError));
 
-  subscribeAnswers();
 }
 let ansUnsub = null, ansFrom = "";
 let dayUnsubs = [];
+function stopDaySubs(){
+  dayUnsubs.forEach(u => { try{u();}catch{} });
+  S.unsubs = S.unsubs.filter(u => !dayUnsubs.includes(u)); dayUnsubs = []; ansUnsub = null;
+}
+// these reads need membership; losing it (removed by the creator) just stops them
+function daySubError(e){
+  if (e && e.code === "invalid_argument"){ stopDaySubs(); S.answers = {}; S.plans = {}; S.overrides = {}; render(); return; }
+  onSubError(e);
+}
 function subscribeAnswers(){
+  if (!S.me) return;
   const from = startDay();
   if (ansUnsub && from === ansFrom) return;
   dayUnsubs.forEach(u => { try{u();}catch{} });
@@ -869,7 +888,7 @@ function subscribeAnswers(){
     const u = S.db.collection(`groups/${gid}/${sub}`).where("day", ">=", from).onSnapshot(snap => {
       if (S.gid !== gid || ansFrom !== from) return;
       fn(snap); render();
-    }, onSubError);
+    }, daySubError);
     dayUnsubs.push(u); S.unsubs.push(u);
   };
   watch("plans", snap => {
@@ -888,7 +907,7 @@ function subscribeAnswers(){
     snap.docs.forEach(doc => { const c = cleanAnswer(doc.data()); if (c) a[doc.id] = c; });
     S.answers = a; render();
     if (!snap.metadata.fromCache) noteChanges(gid);
-  }, onSubError);
+  }, daySubError);
   S.unsubs.push(ansUnsub); dayUnsubs.push(ansUnsub);
 }
 
@@ -1125,7 +1144,8 @@ function render(){
   $("grpName").textContent = S.group.name;
   if (!S.membersLoaded || !S.linkLoaded) return show("sLoading");
   S.me = S.members[S.uid] ? S.uid : (S.linkMid && S.members[S.linkMid] ? S.linkMid : null);
-  if (!S.me){ inGroup(false); renderJoin(); return show("sJoin"); }
+  if (!S.me){ if (ansUnsub) stopDaySubs(); inGroup(false); renderJoin(); return show("sJoin"); }
+  if (!ansUnsub) subscribeAnswers();
   inGroup(true);
   rememberGroup(S.gid, S.group.name);
   renderMain(); renderSheets();
@@ -1150,7 +1170,8 @@ function renderJoin(){
   if (claimSel && !S.members[claimSel]) claimSel = null;
   $("claimCard").hidden = !n;
   $("claimChips").replaceChildren(...ids.map(id => h("button", { type:"button", class:"chip with-av" + (claimSel === id ? " on" : ""), "aria-pressed":String(claimSel === id),
-    onclick:() => { claimSel = claimSel === id ? null : id; renderJoin(); } }, avatar(id, S.members[id].name), S.members[id].name)));
+    onclick:() => { claimSel = claimSel === id ? null : id; $("claimPin").value = ""; renderJoin(); } }, avatar(id, S.members[id].name), S.members[id].name, S.members[id].hasPin ? " 🔒" : "")));
+  $("claimPinRow").hidden = !(claimSel && S.members[claimSel].hasPin);
   $("claimBtn").hidden = !claimSel;
   if (claimSel) $("claimBtn").textContent = `${S.members[claimSel].name}として入る`;
   $("jLabel").textContent = n ? "はじめての人は名前を入れて参加" : "あなたの名前(みんなに表示されます)";
@@ -1353,6 +1374,14 @@ function renderSheets(){
     if (creator) renderMemManage();
   }
   if (isOpen("shSet")) renderColorPick();
+  if (isOpen("shSet")){
+    const me = S.members[S.me];
+    $("pinClear").hidden = !(me && me.hasPin);
+    $("pinSave").textContent = me && me.hasPin ? "変更" : "設定";
+    $("pinHint").textContent = me && me.hasPin
+      ? "合言葉を設定済みです。別のスマホやブラウザから自分として入るときに必要です。"
+      : "設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。";
+  }
   if (isOpen("shSet") && document.activeElement !== $("rName") && !$("rName").dataset.dirty) $("rName").value = S.members[S.me].name;
 }
 
@@ -1465,24 +1494,70 @@ $("createForm").addEventListener("submit", async e => {
   finally { $("cSubmit").disabled = S.canWrite === false; }
 });
 
+function memberBody(m){
+  const b = { name:m.name, joinedAt:m.joinedAt };
+  if (m.color != null) b.color = m.color;
+  if (m.hasPin) b.hasPin = true;
+  return b;
+}
+async function saveMember(patch){
+  const mid = S.me || S.uid, prev = S.members[mid];
+  const next = { ...(prev || { joinedAt:Date.now(), color:null, hasPin:false }), ...patch };
+  await withRetry(() => S.db.doc(`groups/${S.gid}/members/${mid}`).set(memberBody(next)));
+  S.members = { ...S.members, [mid]: next };
+}
 async function saveName(name){
-  const mid = S.me || S.uid, prev = S.members[mid], joinedAt = prev ? prev.joinedAt : Date.now();
-  const color = prev && prev.color != null ? prev.color : null;
-  await withRetry(() => S.db.doc(`groups/${S.gid}/members/${mid}`).set(color != null ? { name, joinedAt, color } : { name, joinedAt }));
+  await saveMember({ name });
   ls.set("name", name);
-  S.members = { ...S.members, [mid]: { name, joinedAt, color } };
 }
 async function saveColor(i){
   const mid = S.me || S.uid, prev = S.members[mid]; if (!prev) return;
   S.members = { ...S.members, [mid]: { ...prev, color:i } }; render();
-  try { await withRetry(() => S.db.doc(`groups/${S.gid}/members/${mid}`).set({ name:prev.name, joinedAt:prev.joinedAt, color:i })); }
+  try { await saveMember({ color:i }); }
   catch (err){ onWriteError(err); }
 }
+async function pinHash(mid, pin){
+  const data = new TextEncoder().encode(`${S.gid}:${mid}:${pin}`);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, "0")).join("");
+}
+async function setPin(pin){
+  const mid = S.me || S.uid;
+  if (pin == null){
+    await withRetry(() => S.db.doc(`groups/${S.gid}/pins/${mid}`).delete());
+    await saveMember({ hasPin:false });
+  } else {
+    const hash = await pinHash(mid, pin);
+    await withRetry(() => S.db.doc(`groups/${S.gid}/pins/${mid}`).set({ hash }));
+    await saveMember({ hasPin:true });
+  }
+}
+$("pinForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const pin = $("pinInput").value.trim();
+  if (!/^[0-9]{4}$/.test(pin)) return toast("合言葉は数字4桁で入れてください", true);
+  try { await setPin(pin); $("pinInput").value = ""; render(); toast("合言葉を設定しました。忘れないようにしてください"); }
+  catch (err){ onWriteError(err); }
+});
+$("pinClear").addEventListener("click", async () => {
+  try { await setPin(null); render(); toast("合言葉を解除しました"); }
+  catch (err){ onWriteError(err); }
+});
 $("claimBtn").addEventListener("click", async () => {
   const mid = claimSel; if (!mid || !S.members[mid]) return;
+  const needPin = S.members[mid].hasPin, pin = $("claimPin").value.trim();
+  if (needPin && !/^[0-9]{4}$/.test(pin)) return toast("合言葉(数字4桁)を入れてください", true);
   const b = $("claimBtn"); b.disabled = true;
+  const ref = S.db.doc(`groups/${S.gid}/links/${S.uid}`), at = Date.now();
   try {
-    await withRetry(() => S.db.doc(`groups/${S.gid}/links/${S.uid}`).set({ mid, at:Date.now() }));
+    try { await withRetry(() => ref.set(needPin ? { mid, at, pin } : { mid, at })); }
+    catch (err){
+      if (needPin && err && err.code === "invalid_argument"){ toast("合言葉が違います", true); return; }
+      throw err;
+    }
+    // don't leave the passcode sitting in the link
+    if (needPin) await withRetry(() => ref.set({ mid, at }));
+    $("claimPin").value = "";
     S.linkMid = mid; claimSel = null;
     ls.set("name", S.members[mid].name);
     render();
@@ -1531,7 +1606,7 @@ $("delBtn").addEventListener("click", async () => {
     toast(`「${name}」を削除しました`);
   } catch (err){
     b.disabled = false; b.classList.remove("armed"); b.textContent = "このグループを削除する";
-    onWriteError(err);
+    toast("削除が途中で止まりました。通信を確認して、もう一度「このグループを削除する」を押してください", true);
     openGroup(gid);
   }
 });
@@ -1556,7 +1631,7 @@ async function removeMember(mid){
     ans.docs.forEach(d => paths.push(`groups/${gid}/answers/${d.id}`));
     const links = await withRetry(() => S.db.collection(`groups/${gid}/links`).where("mid", "==", mid).get());
     links.docs.forEach(d => paths.push(`groups/${gid}/links/${d.id}`));
-    paths.push(`groups/${gid}/members/${mid}`);
+    paths.push(`groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`);
     await S.db.deleteMany(paths);
     toast(`${name}をグループから外しました`);
   } catch (err){ onWriteError(err); }
@@ -1568,6 +1643,8 @@ async function deleteGroup(gid){
   for (const sub of ["answers", "overrides", "plans", "links", "members"]){
     const snap = await withRetry(() => S.db.collection(`groups/${gid}/${sub}`).get());
     snap.docs.forEach(d => paths.push(`groups/${gid}/${sub}/${d.id}`));
+    // passcodes can't be listed; remove one per member (members come last, so this runs before them)
+    if (sub === "links") Object.keys(S.members).forEach(mid => paths.push(`groups/${gid}/pins/${mid}`));
   }
   if (S.db.deleteMany) await S.db.deleteMany(paths);
   else for (const p of paths) await withRetry(() => S.db.doc(p).delete());
