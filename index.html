@@ -642,6 +642,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script>
 (() => {
@@ -805,7 +806,7 @@ function onWriteError(e){
 }
 
 // ---------- subscriptions ----------
-function stopSubs(){ S.unsubs.forEach(u => { try{u();}catch{} }); S.unsubs = []; ansUnsub = null; }
+function stopSubs(){ S.unsubs.forEach(u => { try{u();}catch{} }); S.unsubs = []; ansUnsub = null; dayUnsubs = []; }
 function onSubError(e){
   if (e && e.code === "revoked") return fail("このページへのアクセスが変わりました。再読み込みしてください。");
   fail("データを読み込めませんでした。通信を確認して再読み込みしてください。");
@@ -854,28 +855,33 @@ function openGroup(gid, quiet){
     render();
   }, onSubError));
 
-  S.unsubs.push(g.collection("plans").onSnapshot(snap => {
-    if (S.gid !== gid) return;
-    const o = {};
-    snap.docs.forEach(doc => { const d = doc.data(); const t = d && str(d.text, 30).trim(); if (t) o[doc.id] = { text:t, by:str(d.by, 200) }; });
-    S.plans = o; render();
-  }, onSubError));
-
-  S.unsubs.push(g.collection("overrides").onSnapshot(snap => {
-    if (S.gid !== gid) return;
-    const o = {};
-    snap.docs.forEach(doc => { const n = clamp(doc.data() && doc.data().need, 1, 20, null); if (n) o[doc.id] = n; });
-    S.overrides = o; render();
-  }, onSubError));
-
   subscribeAnswers();
 }
 let ansUnsub = null, ansFrom = "";
+let dayUnsubs = [];
 function subscribeAnswers(){
   const from = startDay();
   if (ansUnsub && from === ansFrom) return;
-  if (ansUnsub){ try{ansUnsub();}catch{} S.unsubs = S.unsubs.filter(u => u !== ansUnsub); }
+  dayUnsubs.forEach(u => { try{u();}catch{} });
+  S.unsubs = S.unsubs.filter(u => !dayUnsubs.includes(u)); dayUnsubs = [];
   const gid = S.gid; ansFrom = from;
+  const watch = (sub, fn) => {
+    const u = S.db.collection(`groups/${gid}/${sub}`).where("day", ">=", from).onSnapshot(snap => {
+      if (S.gid !== gid || ansFrom !== from) return;
+      fn(snap); render();
+    }, onSubError);
+    dayUnsubs.push(u); S.unsubs.push(u);
+  };
+  watch("plans", snap => {
+    const o = {};
+    snap.docs.forEach(doc => { const d = doc.data(); const t = d && str(d.text, 30).trim(); if (t) o[doc.id] = { text:t, by:str(d.by, 200) }; });
+    S.plans = o;
+  });
+  watch("overrides", snap => {
+    const o = {};
+    snap.docs.forEach(doc => { const n = clamp(doc.data() && doc.data().need, 1, 20, null); if (n) o[doc.id] = n; });
+    S.overrides = o;
+  });
   ansUnsub = S.db.collection(`groups/${gid}/answers`).where("day", ">=", from).onSnapshot(snap => {
     if (S.gid !== gid || ansFrom !== from) return;
     const a = {};
@@ -883,7 +889,7 @@ function subscribeAnswers(){
     S.answers = a; render();
     if (!snap.metadata.fromCache) noteChanges(gid);
   }, onSubError);
-  S.unsubs.push(ansUnsub);
+  S.unsubs.push(ansUnsub); dayUnsubs.push(ansUnsub);
 }
 
 // Remember when each person's answer for today was last seen; on the next visit, say how many changed.
@@ -933,9 +939,9 @@ function ruleText(r, n){
   if (r.rule === "ratio") return `メンバーの${RATIOS[r.ratio].label}で開催` + (n ? `(${n}人中${Math.max(1, RATIOS[r.ratio].need(n))}人)` : "");
   return `集まった人でやる(${r.minOpen}人から)`;
 }
-function needFor(day){
+function needFor(day, ovs = S.overrides){
   const n = Object.keys(S.members).length, g = S.group;
-  if (S.overrides[day]) return { need:S.overrides[day], open:true, override:true, tag:`この日だけ${S.overrides[day]}人でやる` };
+  if (ovs[day]) return { need:ovs[day], open:true, override:true, tag:`この日だけ${ovs[day]}人でやる` };
   if (g.rule === "ratio"){ const need = Math.max(1, RATIOS[g.ratio].need(n)); return { need, tag:`${n}人中${need}人で開催` }; }
   if (g.rule === "open") return { need:g.minOpen, open:true, tag:`集まった人でやる・${g.minOpen}人から` };
   return { need:g.quorum, tag:`${g.quorum}人そろったら開催` };
@@ -1356,17 +1362,20 @@ async function renderCal(){
   $("calTitle").textContent = `${y}年${m}月`;
   const maxMonth = addDays(S.day, 6).slice(0, 7);
   $("calNext").disabled = ym >= maxMonth;
-  let list;
+  let list, ovs = S.overrides;
   if (ym >= ansFrom.slice(0, 7) && ym <= maxMonth && ansFrom <= ym + "-01") list = Object.values(S.answers).filter(a => a.day.startsWith(ym));
-  else if (S.monthCache[ym]) list = S.monthCache[ym];
+  else if (S.monthCache[ym]) ({ list, ovs } = S.monthCache[ym]);
   else {
     $("cal").replaceChildren(h("div", { style:"grid-column:1/-1", class:"muted", text:"読み込み中…" }));
     try {
       const snap = await withRetry(() => S.db.collection(`groups/${S.gid}/answers`).where("month", "==", ym).get());
-      S.monthCache[ym] = snap.docs.map(d => cleanAnswer(d.data())).filter(Boolean);
+      const ovSnap = await withRetry(() => S.db.collection(`groups/${S.gid}/overrides`).where("day", ">=", ym + "-01").where("day", "<=", ym + "-31").get());
+      const o = {};
+      ovSnap.docs.forEach(doc => { const n = clamp(doc.data() && doc.data().need, 1, 20, null); if (n) o[doc.id] = n; });
+      S.monthCache[ym] = { list: snap.docs.map(d => cleanAnswer(d.data())).filter(Boolean), ovs: o };
     } catch { $("cal").replaceChildren(h("div", { style:"grid-column:1/-1", class:"muted", text:"読み込めませんでした。閉じてもう一度開いてください" })); return; }
     if (S.calMonth !== ym || !isOpen("shCal")) return;
-    list = S.monthCache[ym];
+    ({ list, ovs } = S.monthCache[ym]);
   }
   const cnt = {};
   list.forEach(a => { if (isMasu(a) && S.members[a.uid]) cnt[a.day] = (cnt[a.day] || 0) + 1; });
@@ -1375,7 +1384,7 @@ async function renderCal(){
   for (let i = 0; i < first; i++) cells.push(h("div", { class:"d x" }));
   let held = 0;
   for (let d = 1; d <= days; d++){
-    const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, isHeld = n > 0 && n >= needFor(key).need;
+    const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, isHeld = n > 0 && n >= needFor(key, ovs).need;
     if (isHeld) held++;
     cells.push(h("div", { class: "d" + (isHeld ? " held" : "") + (key === S.day ? " today" : "") + (isHoliday(key) ? " hol" : "") },
       String(d), n ? h("small", { text: isHeld ? "開催" : `◎${n}` }) : null));
@@ -1721,6 +1730,12 @@ async function boot(){
   }
   try {
     firebase.initializeApp(cfg);
+    // App Check proves requests come from this page; must start before any other Firebase call
+    const siteKey = window.APPCHECK_SITE_KEY;
+    if (siteKey && firebase.appCheck){
+      if (/^(localhost|127.0.0.1)$/.test(location.hostname)) self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+      firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider(siteKey), true);
+    }
     const auth = firebase.auth();
     // Each browser gets a hidden anonymous account, kept between visits.
     const u = await new Promise((resolve, reject) => {
