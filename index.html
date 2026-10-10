@@ -237,6 +237,11 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 @keyframes spark{from{transform:translate(-50%,-50%) scale(1);opacity:1}to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.3) rotate(160deg);opacity:0}}
 .answers.ro .ans{opacity:.55;pointer-events:none}
 .mine-line{display:flex;justify-content:center;gap:8px;align-items:center;font-size:13px;color:var(--muted);min-height:30px;flex-wrap:wrap;text-align:center;flex:none}
+.mine-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
+.mine-row .mine-line{flex:1;min-width:0;justify-content:flex-start;text-align:left}
+.reload-btn{flex:none;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:800}
+.reload-btn .ri{display:inline-block;font-size:15px;line-height:1}
+.reload-btn.spin .ri{animation:sp .6s linear infinite}
 .opt-btn{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:800;color:var(--fg)}
 
 /* chips */
@@ -464,7 +469,10 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
           <button class="ans tabun" data-s="tabun"><span class="t">たぶんます</span><small>たぶん行ける</small></button>
           <button class="ans sen" data-s="sen"><span class="t">せん</span><small>無理です</small></button>
         </div>
-        <div class="mine-line" id="mineLine"></div>
+        <div class="mine-row">
+          <div class="mine-line" id="mineLine"></div>
+          <button type="button" class="reload-btn" id="reloadBtn" aria-label="最新の状態に読み込み直す"><span class="ri" aria-hidden="true">↻</span>更新</button>
+        </div>
       </div>
 
       <div class="col col-mem">
@@ -919,7 +927,7 @@ function rulePicker(root, memberCount){
     const hint = h("p", { class:"rule-hint", text:ruleText(st, memberCount()) });
     const extra = st.rule === "ratio" ? h("p", { class:"rule-hint", text:"メンバーが増えたら、必要な人数も自動で増えます。" })
       : st.rule === "open" ? h("p", { class:"rule-hint", text:"何人そろうかより、集まった人で遊ぶグループ向け。" }) : null;
-    root.replaceChildren(seg, detail, hint, extra);
+    root.replaceChildren(...[seg, detail, hint, extra].filter(Boolean));
   };
   draw();
   return { get:() => ({ rule:st.rule, quorum:st.quorum, ratio:st.ratio, minOpen:st.minOpen }), set(v){ st = cleanRule(v); draw(); } };
@@ -1341,6 +1349,7 @@ window.addEventListener("hashchange", () => { const g = hashGid(); if (g !== S.g
 
 // ---------- events ----------
 document.querySelectorAll("[data-reload]").forEach(b => b.addEventListener("click", () => location.reload()));
+$("reloadBtn").addEventListener("click", () => { $("reloadBtn").classList.add("spin"); setTimeout(() => location.reload(), 150); });
 $("errHome").addEventListener("click", () => { S.fatal = null; go(null); });
 $("grpBtn").addEventListener("click", () => go(null));
 $("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rName").dataset.dirty; openSheet("shSet"); });
