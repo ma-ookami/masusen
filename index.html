@@ -380,6 +380,11 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .cal .d.today{outline:2px solid var(--fg);outline-offset:-2px}
 
 /* toast + confetti */
+.cal .d.hol{color:var(--sun)}
+.cal .d.held.hol{color:var(--masu-ink)}
+.offline{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:45;
+  background:var(--danger);color:#fff;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;box-shadow:0 4px 14px color-mix(in srgb,#000 30%,transparent);max-width:calc(100% - 32px);text-align:center}
+.seg.three{grid-template-columns:repeat(3,1fr)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,40px);opacity:0;background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:800;font-size:14px;transition:.25s;pointer-events:none;z-index:40;max-width:calc(100% - 32px);text-align:center}
 .toast.show{transform:translate(-50%,0);opacity:1}
 .toast.err{background:var(--danger);color:#fff}
@@ -603,6 +608,15 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <p class="rule-hint">オンにするとメンバー全員の画面に表示されます</p>
   </div>
   <div class="sec">
+    <span class="label">画面の明るさ</span>
+    <div class="seg three" id="themePick" role="radiogroup" aria-label="画面の明るさ">
+      <button type="button" role="radio" data-t="auto">自動</button>
+      <button type="button" role="radio" data-t="dark">ダーク</button>
+      <button type="button" role="radio" data-t="light">ライト</button>
+    </div>
+    <p class="rule-hint">自動はスマホの設定に合わせます。この端末だけの設定です。</p>
+  </div>
+  <div class="sec">
     <span class="label">1日の切り替え</span>
     <p class="rule-hint">毎朝5時に新しい日に切り替わります。0時〜5時は前の日の続きとして扱います。</p>
   </div>
@@ -618,6 +632,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   </div>
 </div></div>
 
+<div class="offline" id="offline" role="status" hidden>接続が切れています。つながると自動で反映されます</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <canvas id="confetti" aria-hidden="true"></canvas>
 
@@ -681,6 +696,29 @@ function dayLabel(d, short){
   const t = parseDay(d), m = t.getUTCMonth() + 1, dd = t.getUTCDate(), w = DOW[t.getUTCDay()];
   return `${m}/${dd}(${w})`;
 }
+// Japanese public holidays, computed (fixed days, happy Mondays, equinoxes, substitute and sandwiched days)
+const holidayCache = {};
+function holidaysOf(y){
+  if (holidayCache[y]) return holidayCache[y];
+  const set = new Set(), key = (m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const nthMonday = (m, n) => { const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(); return 1 + ((8 - first) % 7) + (n - 1) * 7; };
+  [[1,1],[2,11],[2,23],[4,29],[5,3],[5,4],[5,5],[8,11],[11,3],[11,23]].forEach(([m, d]) => set.add(key(m, d)));
+  [[1,2],[7,3],[9,3],[10,2]].forEach(([m, n]) => set.add(key(m, nthMonday(m, n))));
+  const k = y - 1980, leap = Math.floor(k / 4);
+  set.add(key(3, Math.floor(20.8431 + 0.242194 * k - leap)));
+  set.add(key(9, Math.floor(23.2488 + 0.242194 * k - leap)));
+  const base = [...set].sort();
+  base.forEach(d => {                     // a holiday on Sunday moves to the next free day
+    if (parseDay(d).getUTCDay() !== 0) return;
+    let n = addDays(d, 1); while (set.has(n)) n = addDays(n, 1); set.add(n);
+  });
+  base.forEach(d => {                     // a weekday between two holidays is a holiday too
+    const mid = addDays(d, 1);
+    if (!set.has(mid) && set.has(addDays(d, 2)) && parseDay(mid).getUTCDay() !== 0) set.add(mid);
+  });
+  return (holidayCache[y] = set);
+}
+const isHoliday = d => holidaysOf(Number(d.slice(0, 4))).has(d);
 function relLabel(d){ return d === S.day ? "今日" : d === addDays(S.day, 1) ? "明日" : dayLabel(d, true); }
 function shiftMonth(ym, delta){ const [y,m] = ym.split("-").map(Number); return new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7); }
 function weekDays(){ return Array.from({length:7}, (_, i) => addDays(S.day, i)); }
@@ -770,6 +808,7 @@ function onSubError(e){
   fail("データを読み込めませんでした。通信を確認して再読み込みしてください。");
 }
 function openGroup(gid, quiet){
+  if (gid && !quiet) S.diffPending = true;
   if (gid && !quiet) ls.set("last", gid);
   stopSubs();
   if (quiet){
@@ -839,8 +878,24 @@ function subscribeAnswers(){
     const a = {};
     snap.docs.forEach(doc => { const c = cleanAnswer(doc.data()); if (c) a[doc.id] = c; });
     S.answers = a; render();
+    if (!snap.metadata.fromCache) noteChanges(gid);
   }, onSubError);
   S.unsubs.push(ansUnsub);
+}
+
+// Remember when each person's answer for today was last seen; on the next visit, say how many changed.
+function noteChanges(gid){
+  const today = {};
+  Object.values(S.answers).forEach(a => { if (a.day === S.day && a.uid !== S.me) today[a.uid] = a.updatedAt || 0; });
+  const prev = ls.get("seen." + gid, null);
+  if (S.diffPending && S.me){
+    S.diffPending = false;
+    if (prev && prev.day === S.day){
+      const n = Object.keys(today).filter(id => S.members[id] && today[id] > (prev.at[id] || 0)).length;
+      if (n) setTimeout(() => toast(`前回から${n}人が返事しました`), 600);
+    }
+  }
+  ls.set("seen." + gid, { day:S.day, at:today });
 }
 
 // ---------- my groups ----------
@@ -1106,7 +1161,7 @@ function renderMain(){
   {
     const t = parseDay(day), w = t.getUTCDay();
     $("dayLabel").replaceChildren((day === S.day ? "今日 " : day === addDays(S.day, 1) ? "明日 " : "") + `${t.getUTCMonth() + 1}/${t.getUTCDate()}`,
-      h("span", { class:"dow-pill", style:`--c:var(--wd${w})`, text:DOW[w] }));
+      h("span", { class:"dow-pill", style:`--c:var(--wd${isHoliday(day) ? 0 : w})`, text:DOW[w] }));
   }
   $("masuN").textContent = masuN; $("needN").textContent = rule.need;
   $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
@@ -1133,7 +1188,7 @@ function renderMain(){
     const n = masuCount(d), r = needFor(d), held = n >= r.need && n > 0, my = mineOn(d);
     const t = parseDay(d);
     const wdN = t.getUTCDay();
-    return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 6 ? " sat" : wdN === 0 ? " sun" : ""), role:"tab", "aria-selected":String(d === day),
+    return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),
         "aria-label": `${dayLabel(d)} ます${n}人` + (held ? " 開催" : "") + (my ? ` 自分は${STATUSES[my.status].label}` : " 自分は未回答"),
         onclick: () => { S.sel = d; planEditing = false; render(); } },
       S.overrides[d] ? h("span", { class:"ov" }) : null,
@@ -1318,7 +1373,7 @@ async function renderCal(){
   for (let d = 1; d <= days; d++){
     const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, isHeld = n > 0 && n >= needFor(key).need;
     if (isHeld) held++;
-    cells.push(h("div", { class: "d" + (isHeld ? " held" : "") + (key === S.day ? " today" : "") },
+    cells.push(h("div", { class: "d" + (isHeld ? " held" : "") + (key === S.day ? " today" : "") + (isHoliday(key) ? " hol" : "") },
       String(d), n ? h("small", { text: isHeld ? "開催" : `◎${n}` }) : null));
   }
   $("cal").replaceChildren(...cells);
@@ -1632,6 +1687,23 @@ async function fetchSig(){
 async function pageChanged(){
   try { const now = await fetchSig(); return !!(pageSig && now && now !== pageSig); } catch { return false; }
 }
+
+// ---------- theme ----------
+function applyTheme(){
+  const t = ls.get("theme", "auto");
+  if (t === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  document.querySelectorAll("#themePick button").forEach(b => { const on = b.dataset.t === t; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); });
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#15131d";
+}
+$("themePick").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (!b) return; ls.set("theme", b.dataset.t); applyTheme(); });
+applyTheme();
+
+// ---------- connection banner ----------
+function updateOnline(){ $("offline").hidden = navigator.onLine !== false; }
+window.addEventListener("online", updateOnline);
+window.addEventListener("offline", updateOnline);
+updateOnline();
 
 // ---------- boot ----------
 async function boot(){
