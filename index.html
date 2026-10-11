@@ -1563,7 +1563,14 @@ function renderMain(){
     const bits = detailText(me);
     line.append(h("button", { class:"opt-btn", onclick:() => openSheet("shDetail") }, bits ? "オプションを変える" : (me.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)")));
   }
-  $("ansHint").textContent = me ? `${dayLabel(day)}の返事 ・ もう一度押すと取り消し` : myUsual ? `${dayLabel(day)}はいつもの返事 ・ 押すと変えられます` : `${dayLabel(day)}の返事をボタンで選んでね`;
+  const wkSt = S.me ? (weeklyOf(S.me, day) || {}).status || null : null;
+  const wkName = wkSt ? `毎週の「${STATUSES[wkSt].label}」` : "";
+  const myRaw = rawMine(day);
+  $("ansHint").textContent = me && wkSt ? `${dayLabel(day)}の返事 ・ もう一度押すと${wkName}に戻ります`
+    : me ? `${dayLabel(day)}の返事 ・ もう一度押すと取り消し`
+    : myUsual ? `${dayLabel(day)}は${wkName} ・ もう一度押すとこの日だけ返事なし`
+    : myRaw && wkSt ? `${dayLabel(day)}は返事なし ・ ${wkName}に戻すときはそのボタンを`
+    : `${dayLabel(day)}の返事をボタンで選んでね`;
 
   // members
   const order = { masu:0, tabun:1, none:2, sen:3 };
@@ -2148,11 +2155,15 @@ $("answers").addEventListener("click", e => {
   const usual = S.me ? (weeklyOf(S.me, S.sel) || {}).status || null : null;
   // tapping what's already selected clears it; on a weekly-default day, "cleared" has to be remembered
   const selected = me ? me.status : (!raw && usual) || null;
+  const usualName = usual ? `毎週の「${STATUSES[usual].label}」` : "";
   if (selected === s){
-    if (usual){ saveMine({ status:"none" }); toast("この日は返事なしにしました"); }
+    if (me && usual) clearMine(`${usualName}に戻しました`);            // my own answer -> back to the weekly one
+    else if (usual){ saveMine({ status:"none" }); toast(`この日は返事なしにしました(${usualName}はこの日だけお休み)`); }
     else clearMine();
     return;
   }
+  // "no answer" day, tapping the weekly answer: just go back to the weekly default
+  if (raw && raw.status === "none" && usual === s){ clearMine(`${usualName}に戻しました`); return; }
   burst(b, e);
   saveMine({ status:s });
 });
@@ -2179,14 +2190,14 @@ $("commentForm").addEventListener("submit", e => {
   e.preventDefault(); saveMine({ comment: $("commentInput").value.trim() }); $("commentInput").blur(); toast("ひとことを送りました");
 });
 $("clearBtn").addEventListener("click", () => clearMine());
-function clearMine(){
+function clearMine(msg){
   const k = myKey(S.sel); if (!S.answers[k]) return;
   const a = { ...S.answers }; delete a[k]; S.answers = a;
   $("commentInput").value = "";
   document.querySelectorAll(".sheet").forEach(s => s.hidden = true); document.body.classList.remove("sheet-open");
   render();
   writeDoc(S.db.doc(`groups/${S.gid}/answers/${k}`), null);
-  toast("返事を取り消しました");
+  toast(typeof msg === "string" ? msg : "返事を取り消しました");
 }
 
 
