@@ -715,6 +715,10 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <div class="sec" data-tab="other">
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
   </div>
+  <div class="sec" data-tab="other">
+    <button type="button" class="btn danger" id="leaveBtn">このグループを抜ける</button>
+    <p class="rule-hint" id="leaveHint">あなたの名前と返事がこのグループから消えます。招待リンクから、また参加できます。</p>
+  </div>
   <p class="set-foot" data-tab="other">毎朝5時に新しい日に切り替わります(0時〜5時は前の日の続き)</p>
   <div class="sec" id="creatorNote" data-tab="group" hidden>
     <span class="label">グループの管理</span>
@@ -1538,6 +1542,11 @@ function renderSheets(){
     $("planToggle").checked = S.group.showPlan;
     const creator = isCreatorHere();
     $("dangerSec").hidden = !creator;
+    const iCreated = !!S.group.createdBy && S.group.createdBy === S.me;
+    $("leaveBtn").hidden = iCreated;
+    $("leaveHint").textContent = iCreated
+      ? "グループを作った人は抜けられません。使わなくなったら、「管理」タブからグループを削除してください。"
+      : "あなたの名前と返事がこのグループから消えます。招待リンクから、また参加できます。";
     $("manageTab").hidden = !creator;
     if (!creator && setTab === "manage") showSetTab("me");
     const linkedCreator = !creator && !!S.group.createdBy && S.group.createdBy === S.me;
@@ -1825,6 +1834,39 @@ function scheduleRuleSave(){
   }, 1000);
 }
 $("switchBtn").addEventListener("click", () => go(null));
+// two taps, like deleting a group
+let leaveArmed = null;
+$("leaveBtn").addEventListener("click", async () => {
+  const b = $("leaveBtn");
+  if (!leaveArmed){
+    b.classList.add("armed"); b.textContent = "本当に抜ける(返事も消えます)";
+    leaveArmed = setTimeout(() => { leaveArmed = null; b.classList.remove("armed"); b.textContent = "このグループを抜ける"; }, 5000);
+    return;
+  }
+  clearTimeout(leaveArmed); leaveArmed = null;
+  b.disabled = true; b.textContent = "抜けています…";
+  const gid = S.gid, mid = S.me, name = S.group.name;
+  try {
+    await leaveGroup(gid, mid);
+    forgetGroup(gid);
+    go(null);
+    toast(`「${name}」を抜けました`);
+  } catch (err){
+    toast("抜ける途中で止まりました。通信を確認して、もう一度押してください", true);
+    openGroup(gid);
+  } finally {
+    b.disabled = false; b.classList.remove("armed"); b.textContent = "このグループを抜ける";
+  }
+});
+async function leaveGroup(gid, mid){
+  if (!mid || (S.group && S.group.createdBy === mid)) throw new Error("creator");
+  const ans = await withRetry(() => S.db.collection(`groups/${gid}/answers`).where("uid", "==", mid).get());
+  const answers = ans.docs.map(d => `groups/${gid}/answers/${d.id}`);
+  stopSubs();
+  // my link proves who I am on a re-entered browser, so it goes last, together with my record
+  await S.db.deleteMany(answers);
+  await S.db.deleteMany([`groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`, `groups/${gid}/links/${S.uid}`]);
+}
 // two taps: the first arms the button, the second (within 5 s) deletes
 let delArmed = null;
 $("delBtn").addEventListener("click", async () => {
