@@ -123,6 +123,13 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .seg button{border:0;background:transparent;border-radius:10px;padding:10px 4px;font-weight:800;font-size:13px;line-height:1.3}
 .seg button.on{background:var(--masu);color:var(--masu-ink)}
 .seg.two{grid-template-columns:1fr 1fr}
+.set-tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:14px;position:sticky;top:-16px;z-index:2}
+.set-tabs button{flex:1;border:0;background:transparent;border-radius:10px;padding:9px 4px;font-weight:800;font-size:13px;color:var(--muted)}
+.set-tabs button.on{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px color-mix(in srgb,#000 25%,transparent)}
+#shSet [data-tab]{display:none}
+#shSet .sec[data-tab]{border-top:0;padding-top:0}
+#shSet[data-cur="me"] [data-tab="me"],#shSet[data-cur="group"] [data-tab="group"],
+#shSet[data-cur="other"] [data-tab="other"],#shSet[data-cur="manage"] [data-tab="manage"]{display:flex}
 .switch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;cursor:pointer}
 .switch-row input{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;margin:0;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
 .switch-row input::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--fg);transition:transform .2s}
@@ -597,32 +604,38 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 <div class="sheet" id="shSet" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
   <div class="grab"></div>
   <div class="sh"><h2 id="setTitle">設定</h2><button class="x" data-close aria-label="閉じる">✕</button></div>
-  <form class="sec" id="renameForm" style="border:0;padding:0">
+  <div class="set-tabs" id="setTabs" role="tablist" aria-label="設定の種類">
+    <button type="button" role="tab" data-t="me">自分</button>
+    <button type="button" role="tab" data-t="group">グループ</button>
+    <button type="button" role="tab" data-t="other">その他</button>
+    <button type="button" role="tab" data-t="manage" id="manageTab" hidden>管理</button>
+  </div>
+  <form class="sec" id="renameForm" data-tab="me">
     <span class="label">自分の名前</span>
     <div class="inline"><input class="input" id="rName" maxlength="16" required><button class="btn">変更</button></div>
     <span class="label" style="margin-top:6px">アイコンの色</span>
     <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
   </form>
-  <form class="sec" id="pinForm">
+  <form class="sec" id="pinForm" data-tab="me">
     <span class="label">合言葉(数字4桁・任意)</span>
     <div class="inline"><input class="input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="例:0000 以外の4桁"><button class="btn" id="pinSave">設定</button></div>
     <p class="rule-hint" style="margin:0" id="pinHint">設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。</p>
     <button type="button" class="linkbtn" id="pinClear" hidden>合言葉を解除する</button>
   </form>
-  <form class="sec" id="gNameForm">
+  <form class="sec" id="gNameForm" data-tab="group">
     <span class="label">グループ名(メンバーならだれでも変えられます)</span>
     <div class="inline"><input class="input" id="gNameInput" maxlength="24" required><button class="btn">変更</button></div>
   </form>
-  <div class="sec">
+  <div class="sec" data-tab="group">
     <span class="label">開催のルール(メンバーならだれでも変えられます)</span>
     <div id="gRule" class="stack"></div>
     <button class="btn primary" id="ruleSave">ルールを保存</button>
   </div>
-  <div class="sec">
+  <div class="sec" data-tab="group">
     <label class="switch-row" for="planToggle"><span>「今日やること」を表示する</span><input type="checkbox" id="planToggle" role="switch"></label>
     <p class="rule-hint">オンにするとメンバー全員の画面に表示されます</p>
   </div>
-  <div class="sec">
+  <div class="sec" data-tab="other">
     <span class="label">画面の明るさ</span>
     <div class="seg three" id="themePick" role="radiogroup" aria-label="画面の明るさ">
       <button type="button" role="radio" data-t="auto">自動</button>
@@ -631,17 +644,17 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     </div>
     <p class="rule-hint">自動はスマホの設定に合わせます。この端末だけの設定です。</p>
   </div>
-  <div class="sec">
+  <div class="sec" data-tab="other">
     <span class="label">1日の切り替え</span>
     <p class="rule-hint">毎朝5時に新しい日に切り替わります。0時〜5時は前の日の続きとして扱います。</p>
   </div>
-  <div class="sec">
+  <div class="sec" data-tab="other">
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
   </div>
-  <div class="sec" id="creatorNote" hidden>
+  <div class="sec" id="creatorNote" data-tab="group" hidden>
     <p class="rule-hint" style="margin:0">メンバーを外す・グループを削除する操作は、グループを作った端末からだけできます。</p>
   </div>
-  <div class="sec" id="dangerSec" hidden>
+  <div class="sec" id="dangerSec" data-tab="manage" hidden>
     <span class="label">メンバー(作った人だけが外せます)</span>
     <ul class="mlist" id="memManage"></ul>
     <p class="rule-hint">同じ人が2人いるときなどに使います。外した人の返事も消えます。</p>
@@ -1102,23 +1115,22 @@ function confetti(fromEl){
   c.width = innerWidth * dpr; c.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cs = getComputedStyle(document.documentElement);
   const cols = ["--masu","--tabun","--coral","--fg","--tmrw"].map(v => cs.getPropertyValue(v).trim());
-  const r = fromEl ? fromEl.getBoundingClientRect() : { left:innerWidth * .2, right:innerWidth * .8, bottom:innerHeight * .35 };
-  const poppers = [
-    { x:r.left + 10, y:r.bottom - 6, dir:-1 },   // left corner, aims up-right
-    { x:r.right - 10, y:r.bottom - 6, dir:1 },   // right corner, aims up-left
-  ];
+  const r = fromEl ? fromEl.getBoundingClientRect() : { left:innerWidth * .2, right:innerWidth * .8, top:innerHeight * .3, bottom:innerHeight * .35 };
+  // launch points spread along the card's top edge; each piece leans away from the middle,
+  // so together they open like one fan
+  const cx = (r.left + r.right) / 2, half = Math.max(40, (r.right - r.left) / 2), top = r.top !== undefined ? r.top + 6 : r.bottom - 40;
   const P = [];
-  poppers.forEach(pp => {
-    for (let i = 0; i < 80; i++){
-      const ang = (-90 + pp.dir * (-(18 + Math.random() * 42))) * Math.PI / 180;  // 18–60° off vertical, toward the middle
-      const sp = 9 + Math.random() * 10;
-      const ribbon = Math.random() < .25;
-      P.push({ x:pp.x, y:pp.y, vx:Math.cos(ang) * sp, vy:Math.sin(ang) * sp,
-        r:Math.random() * Math.PI, vr:(Math.random() - .5) * .5,
-        w: ribbon ? 3 : 5 + Math.random() * 5, hh: ribbon ? 16 + Math.random() * 10 : 7 + Math.random() * 6,
-        c: cols[Math.floor(Math.random() * cols.length)] });
-    }
-  });
+  for (let i = 0; i < 170; i++){
+    const u = (Math.random() * 2 - 1);                          // -1 (left) … 1 (right)
+    const x = cx + u * half * 0.85;
+    const deg = -90 + u * 38 + (Math.random() - .5) * 26;       // mostly up, fanning outward
+    const sp = 10 + Math.random() * 9 - Math.abs(u) * 2;
+    const ribbon = Math.random() < .22;
+    P.push({ x, y:top, vx:Math.cos(deg * Math.PI / 180) * sp, vy:Math.sin(deg * Math.PI / 180) * sp,
+      r:Math.random() * Math.PI, vr:(Math.random() - .5) * .5,
+      w: ribbon ? 3 : 5 + Math.random() * 5, hh: ribbon ? 16 + Math.random() * 10 : 7 + Math.random() * 6,
+      c: cols[Math.floor(Math.random() * cols.length)] });
+  }
   const run = ++confettiRun, t0 = performance.now();
   (function frame(t){
     if (run !== confettiRun) return;            // a newer burst took over the canvas
@@ -1403,6 +1415,8 @@ function renderSheets(){
     $("planToggle").checked = S.group.showPlan;
     const creator = !!S.group.createdBy && S.group.createdBy === S.uid;
     $("dangerSec").hidden = !creator;
+    $("manageTab").hidden = !creator;
+    if (!creator && setTab === "manage") showSetTab("me");
     $("creatorNote").hidden = creator || S.group.createdBy !== S.me;
     if (creator) renderMemManage();
   }
@@ -1498,6 +1512,13 @@ $("reloadBtn").addEventListener("click", async () => {
 });
 $("errHome").addEventListener("click", () => { S.fatal = null; go(null); });
 $("grpBtn").addEventListener("click", () => go(null));
+let setTab = "me";
+function showSetTab(t){
+  setTab = t; $("shSet").dataset.cur = t;
+  $("setTabs").querySelectorAll("button").forEach(b => { const on = b.dataset.t === t; b.classList.toggle("on", on); b.setAttribute("aria-selected", String(on)); });
+}
+$("setTabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) showSetTab(b.dataset.t); });
+showSetTab("me");
 $("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
