@@ -149,6 +149,15 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 #shSet .sec[data-tab]{border-top:0;padding-top:0}
 #shSet[data-cur="me"] [data-tab="me"],#shSet[data-cur="group"] [data-tab="group"],
 #shSet[data-cur="other"] [data-tab="other"],#shSet[data-cur="manage"] [data-tab="manage"]{display:flex}
+.set-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);font-weight:700;font-size:14px}
+.set-row .sr-label{flex:none;font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.set-row .sr-value{flex:1;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.set-row .sr-value.warn{color:var(--coral)}
+.set-row .sr-act{flex:none;font-size:12px;color:var(--muted)}
+.fold{display:flex;flex-direction:column;gap:10px;padding:4px 2px 2px}
+.set-foot{margin:auto 0 0;padding-top:12px;font-size:12px;color:var(--muted);text-align:center;justify-content:center}
+.danger-zone{margin-top:22px;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;border:1.5px solid color-mix(in srgb,var(--danger) 60%,var(--line));background:color-mix(in srgb,var(--danger) 8%,transparent)}
+.danger-zone .label{color:var(--danger)}
 .switch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;cursor:pointer}
 .switch-row input{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;margin:0;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
 .switch-row input::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--fg);transition:transform .2s}
@@ -501,7 +510,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
       <label class="field"><span class="label">グループ名</span>
         <input class="input" id="cName" maxlength="24" placeholder="例:いつものメンバー" required></label>
       <label class="field"><span class="label">あなたの名前</span>
-        <input class="input" id="cMe" maxlength="16" placeholder="例:たろう" required autocomplete="nickname"></label>
+        <input class="input" id="cMe" maxlength="10" placeholder="例:たろう" required autocomplete="nickname"></label>
       <label class="field"><span class="label">合言葉(数字4桁)</span>
         <input class="input" id="cPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required autocomplete="off" placeholder="例:0000 以外の4桁">
         <span class="rule-hint">機種変更やブラウザが変わったときに、作った本人だと確かめるために使います</span></label>
@@ -532,7 +541,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     </div>
     <form class="card stack" id="joinForm">
       <label class="field"><span class="label" id="jLabel">あなたの名前(みんなに表示されます)</span>
-        <input class="input" id="jName" maxlength="16" placeholder="例:たろう" required autocomplete="nickname"></label>
+        <input class="input" id="jName" maxlength="10" placeholder="例:たろう" required autocomplete="nickname"></label>
       <button class="btn primary" id="jSubmit">参加する</button>
     </form>
   </section>
@@ -668,14 +677,16 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <div class="profile" id="profileHead" data-tab="me" aria-live="polite"></div>
   <form class="sec" id="renameForm" data-tab="me">
     <span class="label">自分の名前</span>
-    <div class="inline"><input class="input" id="rName" maxlength="16" required enterkeyhint="done"><button class="btn primary">保存</button></div>
-    <span class="label" style="margin-top:6px">アイコンの色</span>
+    <div class="inline"><input class="input" id="rName" maxlength="10" required enterkeyhint="done"><button class="btn primary">保存</button></div>
+  </form>
+  <div class="sec" data-tab="me">
+    <span class="label">アイコンの色</span>
     <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
     <span class="label" style="margin-top:6px">アイコンの形</span>
     <div class="shapes" id="shapePick" role="radiogroup" aria-label="アイコンの形"></div>
-  </form>
+  </div>
   <form class="sec" id="pinForm" data-tab="me">
-    <span class="label">合言葉(数字4桁・任意)</span>
+    <span class="label">合言葉(数字4桁)</span>
     <div class="inline"><input class="input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="例:0000 以外の4桁" enterkeyhint="done"><button class="btn primary" id="pinSave">保存</button></div>
     <p class="rule-hint" style="margin:0" id="pinHint">設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。</p>
     <button type="button" class="linkbtn" id="pinClear" hidden>合言葉を解除する</button>
@@ -702,12 +713,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <p class="rule-hint">自動はスマホの設定に合わせます。この端末だけの設定です。</p>
   </div>
   <div class="sec" data-tab="other">
-    <span class="label">1日の切り替え</span>
-    <p class="rule-hint">毎朝5時に新しい日に切り替わります。0時〜5時は前の日の続きとして扱います。</p>
-  </div>
-  <div class="sec" data-tab="other">
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
   </div>
+  <p class="set-foot" data-tab="other">毎朝5時に新しい日に切り替わります(0時〜5時は前の日の続き)</p>
   <div class="sec" id="creatorNote" data-tab="group" hidden>
     <span class="label">グループの管理</span>
     <p class="rule-hint" style="margin:0" id="creatorNoteText"></p>
@@ -720,8 +728,11 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <span class="label">メンバー(作った人だけが外せます)</span>
     <ul class="mlist" id="memManage"></ul>
     <p class="rule-hint">同じ人が2人いるときなどに使います。外した人の返事も消えます。</p>
-    <button class="btn danger" id="delBtn">このグループを削除する</button>
-    <p class="rule-hint" id="delHint">作った人だけが削除できます。返事や記録もすべて消え、元に戻せません。</p>
+    <div class="danger-zone">
+      <span class="label">危険な操作</span>
+      <button class="btn danger" id="delBtn">このグループを削除する</button>
+      <p class="rule-hint" id="delHint">返事や記録もすべて消え、元に戻せません。</p>
+    </div>
   </div>
 </div></div>
 
@@ -1640,7 +1651,8 @@ function showSetTab(t){
 }
 $("setTabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) showSetTab(b.dataset.t); });
 showSetTab("me");
-$("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
+$("setBtn").addEventListener("click", () => {
+ gPicker.set(S.group); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
 
