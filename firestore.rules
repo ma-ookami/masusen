@@ -68,6 +68,13 @@ service cloud.firestore {
               '明日なら', '別のことする', 'また今度!'];
     }
 
+    // weekly defaults: keys "0"-"6" (Sunday = 0), each ます / たぶんます / せん
+    function wkOk(w, k) { return !(k in w) || w[k] in ['masu', 'tabun', 'sen']; }
+    function validWeekly(w) {
+      return w is map && w.keys().hasOnly(['0', '1', '2', '3', '4', '5', '6'])
+        && wkOk(w, '0') && wkOk(w, '1') && wkOk(w, '2') && wkOk(w, '3') && wkOk(w, '4') && wkOk(w, '5') && wkOk(w, '6');
+    }
+
     // ---------- shapes ----------
     function validGroup(d) {
       return d.keys().hasOnly(['name', 'rule', 'quorum', 'minus', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan'])
@@ -80,12 +87,13 @@ service cloud.firestore {
         && d.get('showPlan', true) is bool;
     }
     function validMember(d) {
-      return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape'])
+      return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape', 'weekly'])
         && isText(d.name, 1, 16)
         && d.joinedAt is int
         && (!('color' in d) || intIn(d.color, 0, 15))
         && d.get('hasPin', false) is bool
-        && d.get('shape', 'circle') in ['circle', 'squircle', 'badge', 'flower', 'hexagon'];
+        && d.get('shape', 'circle') in ['circle', 'squircle', 'badge', 'flower', 'hexagon']
+        && (!('weekly' in d) || validWeekly(d.weekly));
     }
     function validAnswer(d) {
       return d.keys().hasOnly(['uid', 'day', 'month', 'status', 'from', 'until', 'game', 'conds', 'comment', 'cutoff', 'updatedAt'])

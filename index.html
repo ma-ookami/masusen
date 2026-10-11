@@ -339,6 +339,14 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .av.shape-hexagon{border-radius:0;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0% 50%)}
 .av.shape-flower{border-radius:0;clip-path:polygon(50.0% 0.0%,51.7% 0.1%,53.5% 0.3%,55.2% 0.6%,56.9% 1.1%,58.5% 1.8%,60.1% 2.5%,61.6% 3.4%,63.1% 4.4%,64.5% 5.5%,65.8% 6.7%,67.0% 8.0%,68.1% 9.3%,69.1% 10.8%,70.1% 12.2%,70.9% 13.8%,71.7% 15.3%,72.3% 16.9%,72.9% 18.4%,74.6% 18.5%,76.3% 18.7%,78.0% 18.9%,79.7% 19.2%,81.4% 19.7%,83.1% 20.2%,84.7% 20.9%,86.3% 21.6%,87.8% 22.5%,89.3% 23.5%,90.7% 24.6%,92.0% 25.7%,93.2% 27.0%,94.3% 28.4%,95.3% 29.8%,96.2% 31.3%,96.9% 32.9%,97.6% 34.5%,98.0% 36.2%,98.4% 37.9%,98.5% 39.7%,98.6% 41.4%,98.5% 43.2%,98.3% 44.9%,97.9% 46.7%,97.4% 48.3%,96.8% 50.0%,96.0% 51.6%,95.2% 53.2%,94.3% 54.7%,93.2% 56.1%,92.1% 57.4%,90.9% 58.7%,89.7% 59.9%,88.4% 61.0%,87.1% 62.1%,87.5% 63.7%,87.9% 65.3%,88.2% 67.0%,88.4% 68.7%,88.5% 70.5%,88.5% 72.2%,88.4% 74.0%,88.2% 75.8%,87.8% 77.5%,87.4% 79.2%,86.8% 80.9%,86.1% 82.5%,85.2% 84.0%,84.3% 85.5%,83.2% 86.9%,82.0% 88.2%,80.8% 89.4%,79.4% 90.5%,77.9% 91.4%,76.4% 92.3%,74.8% 93.0%,73.2% 93.6%,71.5% 94.0%,69.7% 94.3%,68.0% 94.5%,66.2% 94.6%,64.5% 94.5%,62.7% 94.3%,61.0% 94.0%,59.3% 93.5%,57.6% 93.0%,56.0% 92.3%,54.4% 91.6%,52.9% 90.8%,51.4% 89.9%,50.0% 89.0%,48.6% 89.9%,47.1% 90.8%,45.6% 91.6%,44.0% 92.3%,42.4% 93.0%,40.7% 93.5%,39.0% 94.0%,37.3% 94.3%,35.5% 94.5%,33.8% 94.6%,32.0% 94.5%,30.3% 94.3%,28.5% 94.0%,26.8% 93.6%,25.2% 93.0%,23.6% 92.3%,22.1% 91.4%,20.6% 90.5%,19.2% 89.4%,18.0% 88.2%,16.8% 86.9%,15.7% 85.5%,14.8% 84.0%,13.9% 82.5%,13.2% 80.9%,12.6% 79.2%,12.2% 77.5%,11.8% 75.8%,11.6% 74.0%,11.5% 72.3%,11.5% 70.5%,11.6% 68.7%,11.8% 67.0%,12.1% 65.3%,12.5% 63.7%,12.9% 62.1%,11.6% 61.0%,10.3% 59.9%,9.1% 58.7%,7.9% 57.4%,6.8% 56.1%,5.7% 54.7%,4.8% 53.2%,4.0% 51.6%,3.2% 50.0%,2.6% 48.3%,2.1% 46.7%,1.7% 44.9%,1.5% 43.2%,1.4% 41.4%,1.5% 39.7%,1.6% 37.9%,2.0% 36.2%,2.4% 34.5%,3.1% 32.9%,3.8% 31.3%,4.7% 29.8%,5.7% 28.4%,6.8% 27.0%,8.0% 25.7%,9.3% 24.6%,10.7% 23.5%,12.2% 22.5%,13.7% 21.6%,15.3% 20.9%,16.9% 20.2%,18.6% 19.7%,20.3% 19.2%,22.0% 18.9%,23.7% 18.7%,25.4% 18.5%,27.1% 18.4%,27.7% 16.9%,28.3% 15.3%,29.1% 13.8%,29.9% 12.2%,30.9% 10.8%,31.9% 9.3%,33.0% 8.0%,34.2% 6.7%,35.5% 5.5%,36.9% 4.4%,38.4% 3.4%,39.9% 2.5%,41.5% 1.8%,43.1% 1.1%,44.8% 0.6%,46.5% 0.3%,48.3% 0.1%)}
 .shapes{display:flex;flex-wrap:wrap;gap:10px}
+.weekly{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.wk{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 7px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:800}
+.wk .wk-d{font-size:12px;color:var(--muted)} .wk.sun .wk-d{color:var(--sun)} .wk.sat .wk-d{color:var(--sat)}
+.wk .wk-v{font-size:16px;line-height:1.2;color:var(--muted)}
+.wk.masu{background:var(--masu);border-color:var(--masu)} .wk.masu .wk-v,.wk.masu .wk-d{color:var(--masu-ink)}
+.wk.tabun{background:var(--tabun);border-color:var(--tabun)} .wk.tabun .wk-v,.wk.tabun .wk-d{color:var(--tabun-ink)}
+.wk.sen{background:var(--sen);border-color:var(--sen)} .wk.sen .wk-v,.wk.sen .wk-d{color:var(--sen-ink)}
+.mem .nm em.usual{background:transparent;border:1px dashed var(--line)}
 .shape-opt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 10px 6px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-size:12px;font-weight:700;color:var(--muted)}
 .shape-opt .av{width:34px;height:34px;font-size:15px}
 .shape-opt.on{border-color:var(--fg);color:var(--fg)}
@@ -696,6 +704,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
     <span class="label" style="margin-top:6px">アイコンの形</span>
     <div class="shapes" id="shapePick" role="radiogroup" aria-label="アイコンの形"></div>
+    <span class="label" style="margin-top:6px">いつもの返事(曜日ごと)</span>
+    <div class="weekly" id="weeklyPick"></div>
+    <p class="rule-hint" style="margin:0">タップで「なし → ます → たぶん → せん」と切り替わります。その日だけ違うときは、返事のボタンを押せば上書きされます。祝日は使われません。</p>
   </div>
   <form class="sec" id="pinForm" data-tab="me">
     <span class="label">合言葉(数字4桁)</span>
@@ -962,7 +973,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.collection("members").onSnapshot(snap => {
     if (S.gid !== gid) return;
     const m = {};
-    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 15, null), hasPin:d.hasPin === true, shape:Object.hasOwn(SHAPES, d.shape || "") ? d.shape : "circle" }; });
+    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 15, null), hasPin:d.hasPin === true, weekly:cleanWeekly(d.weekly), shape:Object.hasOwn(SHAPES, d.shape || "") ? d.shape : "circle" }; });
     S.members = m;
     if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
     render();
@@ -1096,14 +1107,30 @@ function needFor(day, ovs = S.overrides){
   if (g.rule === "open") return { need:g.minOpen, open:true, tag:`集まった人でやる・${g.minOpen}人から` };
   return { need:g.quorum, tag:`${g.quorum}人そろったら開催` };
 }
+// weekly defaults: { "0":"sen", "5":"masu" } (0 = Sunday)
+function cleanWeekly(w){
+  const out = {};
+  if (w && typeof w === "object") for (let i = 0; i < 7; i++){ const v = w[String(i)]; if (STATUSES[v]) out[String(i)] = v; }
+  return out;
+}
+function weeklyOf(id, day){
+  const m = S.members[id];
+  if (!m || !m.weekly || isHoliday(day)) return null;
+  return m.weekly[String(parseDay(day).getUTCDay())] || null;
+}
 function answersFor(day){
   const out = {};
   for (const k in S.answers){ const a = S.answers[k]; if (a.day === day && S.members[a.uid]) out[a.uid] = a; }
+  for (const id in S.members){
+    if (out[id]) continue;
+    const st = weeklyOf(id, day);
+    if (st) out[id] = { uid:id, day, status:st, from:null, until:null, cutoff:null, game:"", conds:[], comment:"", updatedAt:0, usual:true };
+  }
   return out;
 }
 const isMasu = a => !!a && a.status === "masu";
 const isTabun = a => !!a && a.status === "tabun";
-function masuCount(day){ let c = 0; for (const k in S.answers){ const a = S.answers[k]; if (a.day === day && isMasu(a) && S.members[a.uid]) c++; } return c; }
+function masuCount(day){ const ad = answersFor(day); return Object.values(ad).filter(isMasu).length; }
 const myKey = day => day + "_" + S.me;
 const mineOn = day => S.answers[myKey(day)] || null;
 function detailText(a){
@@ -1129,7 +1156,20 @@ function avatar(id, name){
   const m = S.members[id], shape = m && m.shape && m.shape !== "circle" ? m.shape : "";
   return h("span", { class:"av" + (shape ? " shape-" + shape : ""), style:avStyle(colorIndex(id)), "aria-hidden":"true", text:[...(name || "?")][0] });
 }
+const WEEKLY_CYCLE = [null, "masu", "tabun", "sen"];
+function renderWeeklyPick(){
+  const mid = S.me || S.uid, m = S.members[mid]; if (!m) return;
+  const w = m.weekly || {};
+  $("weeklyPick").replaceChildren(...DOW.map((dn, i) => {
+    const v = w[String(i)] || null;
+    return h("button", { type:"button", class:"wk " + (v || "none") + (i === 0 ? " sun" : i === 6 ? " sat" : ""),
+      "aria-label":`${dn}曜日:${v ? STATUSES[v].label : "なし"}`,
+      onclick:() => saveWeekly(i, WEEKLY_CYCLE[(WEEKLY_CYCLE.indexOf(v) + 1) % WEEKLY_CYCLE.length]) },
+      h("span", { class:"wk-d", text:dn }), h("span", { class:"wk-v", text: v ? STATUSES[v].ic : "ー" }));
+  }));
+}
 function renderColorPick(){
+  renderWeeklyPick();
   const mid = (S.me || S.uid), m = S.members[mid]; if (!m) return;
   const cur = colorIndex(mid), ch = [...(m.name || "?")][0], curShape = m.shape || "circle";
   $("shapePick").replaceChildren(...Object.keys(SHAPES).map(k => h("button", { type:"button", class:"shape-opt" + (k === curShape ? " on" : ""),
@@ -1464,13 +1504,14 @@ function renderMain(){
   // buttons
   const box = $("answers");
   box.classList.toggle("ro", ro);
-  box.querySelectorAll(".ans").forEach(b => b.classList.toggle("sel", !!me && me.status === b.dataset.s));
+  const myUsual = !me && S.me ? weeklyOf(S.me, day) : null;
+  box.querySelectorAll(".ans").forEach(b => b.classList.toggle("sel", (!!me && me.status === b.dataset.s) || myUsual === b.dataset.s));
   const line = $("mineLine"); line.replaceChildren();
   if (me){
     const bits = detailText(me);
     line.append(h("button", { class:"opt-btn", onclick:() => openSheet("shDetail") }, bits ? "オプションを変える" : (me.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)")));
   }
-  $("ansHint").textContent = me ? `${dayLabel(day)}の返事 ・ もう一度押すと取り消し` : `${dayLabel(day)}の返事をボタンで選んでね`;
+  $("ansHint").textContent = me ? `${dayLabel(day)}の返事 ・ もう一度押すと取り消し` : myUsual ? `${dayLabel(day)}はいつもの返事 ・ 押すと変えられます` : `${dayLabel(day)}の返事をボタンで選んでね`;
 
   // members
   const order = { masu:0, tabun:1, none:2, sen:3 };
@@ -1485,8 +1526,8 @@ function renderMain(){
     const meta = metaNodes(a, false, S.anon);
     const shown = S.anon ? `メンバー${i + 1}` : m.name;
     return h("li", { class: "mem " + st },
-      h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null),
-      h("span", { class:"ago", text: a ? agoText(a.updatedAt) : "" }),
+      h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null, a && a.usual ? h("em", { class:"usual", text:"いつもの" }) : null),
+      h("span", { class:"ago", text: a && !a.usual ? agoText(a.updatedAt) : "" }),
       a ? h("span", { class:"st " + st, text:`${STATUSES[st].ic} ${STATUSES[st].label}` }) : h("span"),
       meta.length ? h("div", { class:"meta" }, meta) : null);
   }));
@@ -1683,9 +1724,13 @@ async function renderCal(){
     Object.keys(ovs).forEach(d => { if (d >= S.day && !S.overrides[d]) delete ovs[d]; });
     Object.assign(ovs, Object.fromEntries(Object.entries(S.overrides).filter(([d]) => d.startsWith(ym))));
   }
-  const cnt = {};
-  list.forEach(a => { if (isMasu(a) && S.members[a.uid]) cnt[a.day] = (cnt[a.day] || 0) + 1; });
+  const cnt = {}, answered = new Set();
+  list.forEach(a => { answered.add(a.day + "_" + a.uid); if (isMasu(a) && S.members[a.uid]) cnt[a.day] = (cnt[a.day] || 0) + 1; });
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  for (let d = 1; d <= days; d++){
+    const key = `${ym}-${String(d).padStart(2, "0")}`;
+    for (const id in S.members) if (!answered.has(key + "_" + id) && weeklyOf(id, key) === "masu") cnt[key] = (cnt[key] || 0) + 1;
+  }
   const cells = DOW.map((d, i) => h("div", { class:"dow" + (i === 0 ? " sun" : i === 6 ? " sat" : ""), text:d }));
   for (let i = 0; i < first; i++) cells.push(h("div", { class:"d pad" }));
   let held = 0;
@@ -1792,6 +1837,7 @@ function memberBody(m){
   if (m.color != null) b.color = m.color;
   if (m.hasPin) b.hasPin = true;
   if (m.shape && m.shape !== "circle") b.shape = m.shape;
+  if (m.weekly && Object.keys(m.weekly).length) b.weekly = m.weekly;
   return b;
 }
 async function saveMember(patch){
@@ -1803,6 +1849,19 @@ async function saveMember(patch){
 async function saveName(name){
   await saveMember({ name });
   ls.set("name", name);
+}
+let weeklyTimer = null;
+function saveWeekly(i, v){
+  const mid = S.me || S.uid, prev = S.members[mid]; if (!prev) return;
+  const w = { ...(prev.weekly || {}) };
+  if (v) w[String(i)] = v; else delete w[String(i)];
+  S.members = { ...S.members, [mid]: { ...prev, weekly:w } }; render();
+  // a few taps in a row become one save
+  clearTimeout(weeklyTimer);
+  weeklyTimer = setTimeout(async () => {
+    try { await saveMember({ weekly:S.members[mid].weekly }); toast("保存しました"); }
+    catch (err){ onWriteError(err); }
+  }, 700);
 }
 async function saveShape(k){
   const mid = S.me || S.uid, prev = S.members[mid]; if (!prev || (prev.shape || "circle") === k) return;
