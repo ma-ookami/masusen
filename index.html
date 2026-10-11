@@ -836,7 +836,7 @@ function openGroup(gid, quiet){
     if (S.sel < S.day) S.sel = S.day;
   } else {
   closeSheets();
-  Object.assign(S, { gid, deniedFor:null, me:null, linkMid:null, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"" });
+  Object.assign(S, { gid, deniedFor:null, me:null, linkMid:null, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"", ansReady:false, festState:{} });
   planEditing = false;
   S.day = gameDay(); S.sel = S.day; S.month = S.day.slice(0, 7); S.calMonth = S.month;
   render();
@@ -912,7 +912,7 @@ function subscribeAnswers(){
     if (S.gid !== gid || ansFrom !== from) return;
     const a = {};
     snap.docs.forEach(doc => { const c = cleanAnswer(doc.data()); if (c) a[doc.id] = c; });
-    S.answers = a; render();
+    S.answers = a; S.ansReady = true; render();
     if (!snap.metadata.fromCache) noteChanges(gid);
   }, daySubError);
   S.unsubs.push(ansUnsub); dayUnsubs.push(ansUnsub);
@@ -1095,23 +1095,37 @@ function burst(btn, e){
     btn.append(sp); setTimeout(() => sp.remove(), 650);
   }
 }
-function confetti(){
+let confettiRun = 0;
+function confetti(fromEl){
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const c = $("confetti"), ctx = c.getContext("2d"), dpr = window.devicePixelRatio || 1;
   c.width = innerWidth * dpr; c.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cs = getComputedStyle(document.documentElement);
-  const cols = ["--masu","--tabun","--coral","--fg"].map(v => cs.getPropertyValue(v).trim());
-  const P = Array.from({length:140}, () => ({
-    x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * .3,
-    vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, r: Math.random() * Math.PI, vr: (Math.random() - .5) * .4,
-    w: 6 + Math.random() * 6, hh: 8 + Math.random() * 8, c: cols[Math.floor(Math.random() * cols.length)],
-  }));
-  const t0 = performance.now();
+  const cols = ["--masu","--tabun","--coral","--fg","--tmrw"].map(v => cs.getPropertyValue(v).trim());
+  const r = fromEl ? fromEl.getBoundingClientRect() : { left:innerWidth * .2, right:innerWidth * .8, bottom:innerHeight * .35 };
+  const poppers = [
+    { x:r.left + 10, y:r.bottom - 6, dir:-1 },   // left corner, aims up-right
+    { x:r.right - 10, y:r.bottom - 6, dir:1 },   // right corner, aims up-left
+  ];
+  const P = [];
+  poppers.forEach(pp => {
+    for (let i = 0; i < 80; i++){
+      const ang = (-90 + pp.dir * (-(18 + Math.random() * 42))) * Math.PI / 180;  // 18–60° off vertical, toward the middle
+      const sp = 9 + Math.random() * 10;
+      const ribbon = Math.random() < .25;
+      P.push({ x:pp.x, y:pp.y, vx:Math.cos(ang) * sp, vy:Math.sin(ang) * sp,
+        r:Math.random() * Math.PI, vr:(Math.random() - .5) * .5,
+        w: ribbon ? 3 : 5 + Math.random() * 5, hh: ribbon ? 16 + Math.random() * 10 : 7 + Math.random() * 6,
+        c: cols[Math.floor(Math.random() * cols.length)] });
+    }
+  });
+  const run = ++confettiRun, t0 = performance.now();
   (function frame(t){
+    if (run !== confettiRun) return;            // a newer burst took over the canvas
     ctx.clearRect(0, 0, innerWidth, innerHeight);
-    P.forEach(p => { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+    P.forEach(p => { p.vy += .32; p.vx *= .985; p.vy *= .995; p.x += p.vx; p.y += p.vy; p.r += p.vr;
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.w/2, -p.hh/2, p.w, p.hh); ctx.restore(); });
-    if (t - t0 < 3200) requestAnimationFrame(frame); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+    if (t - t0 < 3000) requestAnimationFrame(frame); else ctx.clearRect(0, 0, innerWidth, innerHeight);
   })(t0);
 }
 
@@ -1226,9 +1240,10 @@ function renderMain(){
   card.classList.toggle("held", fest);
   card.classList.toggle("soft", fest && !!rule.open);
   if (fest && !wasHeld){ card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); }
-  const festKey = S.gid + day;
-  if (fest && !rule.open && S.prevFest !== festKey && ls.get("fest." + festKey, false) === false){ ls.set("fest." + festKey, true); confetti(); }
-  S.prevFest = fest ? festKey : "";
+  if (S.ansReady){
+    if (S.festState[day] === false && fest) confetti($("scoreCard"));
+    S.festState[day] = fest;
+  }
 
   // week strip
   $("week").replaceChildren(...weekDays().map((d, i) => {
