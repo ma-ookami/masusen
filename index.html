@@ -707,6 +707,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <div class="sec" data-tab="group">
     <span class="label">開催のルール(メンバーならだれでも変えられます)</span>
     <div id="gRule" class="stack"></div>
+    <button type="button" class="btn primary" id="ruleSave" disabled>ルールを保存</button>
   </div>
   <div class="sec" data-tab="group">
     <label class="switch-row" for="planToggle"><span>「今日やること」を表示する</span><input type="checkbox" id="planToggle" role="switch"></label>
@@ -1679,7 +1680,7 @@ function showSetTab(t){
 $("setTabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) showSetTab(b.dataset.t); });
 showSetTab("me");
 $("setBtn").addEventListener("click", () => {
- gPicker.set(S.group); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
+ gPicker.set(S.group); updateRuleSave(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("anonBtn").addEventListener("click", () => {
   S.anon = !S.anon;
@@ -1690,7 +1691,7 @@ $("anonBtn").addEventListener("click", () => {
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
 
 const cPicker = rulePicker($("cRule"), () => 0, () => { $("cRuleNow").textContent = "開催のルール:" + ruleText(cPicker.get(), 0); });
-const gPicker = rulePicker($("gRule"), () => Object.keys(S.members).length, () => scheduleRuleSave());
+const gPicker = rulePicker($("gRule"), () => Object.keys(S.members).length, () => updateRuleSave());
 
 $("openCreate").addEventListener("click", () => { setHomeOpen(homeOpen === "create" ? null : "create"); if (homeOpen) $("cName").focus(); });
 $("openPaste").addEventListener("click", () => { setHomeOpen(homeOpen === "paste" ? null : "paste"); if (homeOpen) $("pasteInput").focus(); });
@@ -1847,16 +1848,19 @@ $("gNameForm").addEventListener("submit", async e => {
   } catch (err){ onWriteError(err); }
 });
 // a burst of +/− taps becomes one write
-let ruleTimer = null;
-function scheduleRuleSave(){
-  clearTimeout(ruleTimer);
-  ruleTimer = setTimeout(async () => {
-    const r = gPicker.get(), g = S.group;
-    if (!g || (r.rule === g.rule && r.quorum === g.quorum && r.ratio === g.ratio && r.minOpen === g.minOpen)) return;
-    try { await withRetry(() => S.db.doc("groups/" + S.gid).update(r)); toast("保存しました:" + ruleText(r, Object.keys(S.members).length)); }
-    catch (err){ onWriteError(err); }
-  }, 1000);
+// the save button lights up only when the picked rule differs from the saved one
+function ruleChanged(){
+  const r = gPicker.get(), g = S.group;
+  return !!g && !(r.rule === g.rule && r.quorum === g.quorum && r.ratio === g.ratio && r.minOpen === g.minOpen);
 }
+function updateRuleSave(){ $("ruleSave").disabled = !ruleChanged(); }
+$("ruleSave").addEventListener("click", async () => {
+  if (!ruleChanged()) return;
+  const r = gPicker.get();
+  $("ruleSave").disabled = true;
+  try { await withRetry(() => S.db.doc("groups/" + S.gid).update(r)); S.group = { ...S.group, ...r }; render(); toast("保存しました:" + ruleText(r, Object.keys(S.members).length)); }
+  catch (err){ onWriteError(err); updateRuleSave(); }
+});
 $("switchBtn").addEventListener("click", () => go(null));
 // two taps, like deleting a group
 let leaveArmed = null;
