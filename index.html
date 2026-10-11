@@ -220,6 +220,7 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable;ov
 .score-info .linkbtn{font-size:12px;padding:0}
 .day{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--muted)}
 .day b{color:var(--fg);font-size:15px;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.day .late{margin-left:4px;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.02em}
 .dow-pill{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 6px;border-radius:999px;background:var(--c);color:var(--bg);font-size:13px;font-weight:800;line-height:1}
 .count{display:flex;align-items:baseline;gap:4px;font-variant-numeric:tabular-nums;flex:none}
 .count .n{font-family:var(--f-display);font-size:58px;line-height:1;color:var(--masu)}
@@ -678,7 +679,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <dl class="ov-info">
     <dt>いつものルール</dt><dd id="ovUsual"></dd>
     <dt>この日</dt><dd id="ovToday"></dd>
-    <dt>切り替え</dt><dd>毎朝5時に新しい日になります</dd>
+    <dt>切り替え</dt><dd>毎朝4時に新しい日になります</dd>
   </dl>
   <span class="label">この日だけ人数を変える</span>
   <p class="rule-hint" id="ovHint">決めた人数の「ます」がいれば、この日はやることにします。</p>
@@ -762,7 +763,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <button type="button" class="btn danger" id="leaveBtn" style="margin-top:6px">このグループを抜ける</button>
     <p class="rule-hint" id="leaveHint">あなたの名前と返事がこのグループから消えます。招待リンクから、また参加できます。</p>
   </div>
-  <p class="set-foot" data-tab="other">毎朝5時に新しい日に切り替わります(0時〜5時は前の日の続き)</p>
+  <p class="set-foot" data-tab="other">毎朝4時に新しい日に切り替わります(0時〜4時は前の日の続き)</p>
   <div class="sec box" id="creatorNote" data-tab="group" hidden>
     <h3 class="box-h">グループの管理</h3>
     <p class="rule-hint" style="margin:0" id="creatorNoteText"></p>
@@ -840,9 +841,11 @@ const ls = {
   set(k, v){ try{ localStorage.setItem("masusen." + k, JSON.stringify(v)); }catch{} },
 };
 
-// ---------- dates: a "game day" runs from 5:00 to 5:00 JST ----------
-function gameDay(now = Date.now()){ return new Date(now + 4 * 3600e3).toISOString().slice(0, 10); }
-function msUntilReset(now = Date.now()){ const d = 86400e3; return d - ((now + 4 * 3600e3) % d); }
+// ---------- dates: a "game day" runs from 4:00 to 4:00 JST ----------
+function gameDay(now = Date.now()){ return new Date(now + 5 * 3600e3).toISOString().slice(0, 10); }
+function msUntilReset(now = Date.now()){ const d = 86400e3; return d - ((now + 5 * 3600e3) % d); }
+// 0:00-4:00 JST: still yesterday's game day
+function lateNight(now = Date.now()){ return new Date(now + 9 * 3600e3).getUTCHours() < 4; }
 function parseDay(d){ const [y,m,dd] = d.split("-").map(Number); return new Date(Date.UTC(y, m-1, dd)); }
 function addDays(d, n){ const t = parseDay(d); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
 function dayLabel(d, short){
@@ -1509,7 +1512,8 @@ function renderMain(){
   {
     const t = parseDay(day), w = t.getUTCDay();
     $("dayLabel").replaceChildren((day === S.day ? "今日 " : day === addDays(S.day, 1) ? "明日 " : "") + `${t.getUTCMonth() + 1}/${t.getUTCDate()}`,
-      h("span", { class:"dow-pill", style:`--c:var(--wd${isHoliday(day) ? 0 : w})`, text:DOW[w] }));
+      h("span", { class:"dow-pill", style:`--c:var(--wd${isHoliday(day) ? 0 : w})`, text:DOW[w] }),
+      day === S.day && lateNight() ? h("span", { class:"late", text:"🌙 朝4時まで" }) : null);
   }
   $("masuN").textContent = masuN; $("needN").textContent = rule.need;
   $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
@@ -2228,7 +2232,7 @@ $("ovReset").addEventListener("click", async () => {
 $("calPrev").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMonth, -1); renderCal(); });
 $("calNext").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMonth, 1); renderCal(); });
 
-// day rollover at 5:00 and countdown refresh
+// day rollover at 4:00 and countdown refresh
 setInterval(() => {
   if (!S.gid || !S.db) return;
   const d = gameDay();
