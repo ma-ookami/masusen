@@ -84,7 +84,7 @@ button{cursor:pointer}
 .mascot:not(.happy):not(.sad):not(.sleep) .f-normal,.mascot.happy .f-happy,.mascot.sad .f-sad,.mascot.sleep .f-sleep{display:inline}
 .mascot .eyes{transform-box:fill-box;transform-origin:center}
 .mascot.blink .eyes{animation:mBlink .3s steps(2)}
-.mascots{flex:none;display:flex;align-items:flex-end;gap:4px;margin:-6px 0 -2px}
+.mascots{flex:none;display:flex;align-items:flex-end;gap:9px;margin:-6px 0 -2px}
 .mascot.lcd{width:34px;height:40px;margin:0}
 .mascot svg{object-fit:contain}
 .mascot .ant{transform-box:view-box;transform-origin:16px 7px;transition:transform .4s cubic-bezier(.3,1.4,.5,1)}
@@ -349,7 +349,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 @media (max-width:879px){ #sMain{padding-bottom:56px} }  /* keep the last rows clear of the floating button */
 .reload-btn .ri{display:inline-block;font-size:20px;font-weight:800;line-height:1}
 .reload-btn.spin .ri{animation:sp .6s linear infinite}
-.opt-btn{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:800;color:var(--fg)}
+.opt-btn{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:800;color:var(--muted)}
 
 /* chips */
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -2319,7 +2319,7 @@ function mascotDo(el, move){
 }
 mascots().forEach(el => {
   el.addEventListener("animationend", () => el.classList.remove(...MASCOT_MOVES));
-  el.addEventListener("click", () => { try { navigator.vibrate && navigator.vibrate(10); } catch {} mascotDo(el, "spin"); });
+  el.addEventListener("click", () => { try { navigator.vibrate && navigator.vibrate(10); } catch {} mascotDo(el, el.classList.contains("sleep") ? "wiggle" : "hop"); });
   (function idle(){
     setTimeout(() => {
       if (!document.hidden && el.offsetParent){
