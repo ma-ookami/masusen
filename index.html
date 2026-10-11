@@ -1453,12 +1453,12 @@ function renderMain(){
     const t = parseDay(d);
     const wdN = t.getUTCDay();
     return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : skipped ? " skipd" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),
-        "aria-label": `${dayLabel(d)} ます${n}人` + (held ? " 開催" : skipped ? " スキップ" : "") + (my ? ` 自分は${STATUSES[my.status].label}` : " 自分は未回答"),
+        "aria-label": `${dayLabel(d)} ます${n}人` + (held ? " 開催" : skipped ? " 見送り" : "") + (my ? ` 自分は${STATUSES[my.status].label}` : " 自分は未回答"),
         onclick: () => { S.sel = d; planEditing = false; render(); } },
       S.overrides[d] ? h("span", { class:"ov" }) : null,
       h("span", { class:"w", text: i === 0 ? "今日" : i === 1 ? "明日" : DOW[t.getUTCDay()] }),
       h("span", { class:"dn", text: t.getUTCDate() }),
-      h("span", { class:"c", text: held ? "★開催" : skipped ? "スキップ" : n ? `◎${n}` : "" }));
+      h("span", { class:"c", text: held ? "★開催" : skipped ? "見送り" : n ? `◎${n}` : "" }));
   }));
 
   // buttons
