@@ -132,6 +132,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .hero p{margin:10px 0 0;color:var(--muted)}
 .stepper{display:flex;align-items:center;justify-content:center;gap:12px}
 .stepper button{width:44px;height:44px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:20px;font-weight:800}
+.stepper button:disabled{opacity:.35;cursor:default}
 .stepper output{font-family:var(--f-display);font-size:28px;min-width:1.6em;text-align:center;font-variant-numeric:tabular-nums}
 .glist{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
 .glist button{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-weight:700}
@@ -1163,25 +1164,41 @@ function timeText(a){
 }
 
 // rule picker (used on create and in settings)
+// min/max may be functions, so the range can follow the member count
 function stepper(get, set, min, max, unit){
+  const lo = () => typeof min === "function" ? min() : min, hi = () => typeof max === "function" ? max() : max;
   const out = h("output", { text:get() });
-  const upd = v => { set(Math.max(min, Math.min(max, v))); out.textContent = get(); };
-  return h("div", { class:"stepper" },
-    h("button", { type:"button", "aria-label":"減らす", onclick:() => upd(get() - 1) }, "−"), out, h("span", { text:unit }),
-    h("button", { type:"button", "aria-label":"増やす", onclick:() => upd(get() + 1) }, "+"));
+  const minus = h("button", { type:"button", "aria-label":"減らす", onclick:() => upd(get() - 1) }, "−");
+  const plus = h("button", { type:"button", "aria-label":"増やす", onclick:() => upd(get() + 1) }, "+");
+  const sync = () => { out.textContent = get(); minus.disabled = get() <= lo(); plus.disabled = get() >= hi(); };
+  // a saved value outside today's range (members left) can still be lowered/raised back in
+  function upd(v){ const cur = get(); const next = Math.max(Math.min(lo(), cur), Math.min(Math.max(hi(), cur), v));
+    if (v < cur) set(Math.max(Math.min(lo(), cur), v)); else if (v > cur && cur < hi()) set(Math.min(hi(), v)); else if (next !== cur) set(next);
+    sync(); }
+  sync();
+  return h("div", { class:"stepper" }, minus, out, h("span", { text:unit }), plus);
 }
 function rulePicker(root, memberCount, onChange){
   let st = cleanRule({});
   const changed = () => { if (onChange) onChange(); };
+  // with members known, every number stays within them (the create form has none yet, so it's left alone)
+  const fit = () => {
+    const n = memberCount(); if (n < 1) return;
+    st.quorum = Math.min(Math.max(st.quorum, 1), n);
+    st.minOpen = Math.min(Math.max(st.minOpen, 1), n);
+    st.minus = Math.min(Math.max(st.minus, 0), n - 1);
+  };
   const draw = () => {
+    fit();
     const seg = h("div", { class:"seg", role:"radiogroup" },
       [["count","人数を\n決める"],["minus","メンバー数に\n合わせる"],["open","集まった\n人でやる"]].map(([k, l]) =>
         h("button", { type:"button", role:"radio", "aria-checked":String(st.rule === k), class: st.rule === k ? "on" : "", onclick:() => { st.rule = k; draw(); changed(); } },
           ...l.split("\n").flatMap((p, i) => i ? [h("br"), p] : [p]))));
     let detail;
-    if (st.rule === "count") detail = stepper(() => st.quorum, v => { st.quorum = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, 20, "人そろったら開催");
-    else if (st.rule === "minus") detail = stepper(() => st.minus, v => { st.minus = v; hint.textContent = minusHint(); changed(); }, 0, 19, "人少なくても開催");
-    else detail = stepper(() => st.minOpen, v => { st.minOpen = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, 20, "人いればやる");
+    const n = () => memberCount(), cap = () => n() >= 1 ? n() : 20;
+    if (st.rule === "count") detail = stepper(() => st.quorum, v => { st.quorum = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, cap, "人そろったら開催");
+    else if (st.rule === "minus") detail = stepper(() => st.minus, v => { st.minus = v; hint.textContent = minusHint(); changed(); }, 0, () => n() >= 1 ? Math.max(0, n() - 1) : 19, "人少なくても開催");
+    else detail = stepper(() => st.minOpen, v => { st.minOpen = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, cap, "人いればやる");
     const minusHint = () => {
       const n = memberCount();
       if (n < 2) return st.minus === 0 ? "メンバー全員そろったら開催します" : `メンバーが集まったら、その人数より${st.minus}人少なくても開催します`;
@@ -2039,7 +2056,8 @@ function clearMine(){
 
 
 let ovN = 2;
-const setOv = v => { ovN = Math.max(1, Math.min(20, v)); $("ovN").textContent = ovN; };
+const ovMax = () => Math.max(1, Object.keys(S.members).length || 20);
+const setOv = v => { ovN = Math.max(1, Math.min(ovMax(), v)); $("ovN").textContent = ovN; $("ovMinus").disabled = ovN <= 1; $("ovPlus").disabled = ovN >= ovMax(); };
 function openRuleSheet(){ setOv(S.overrides[S.sel] || Math.max(1, needFor(S.sel).need - 1)); openSheet("shOverride"); }
 $("scoreCard").addEventListener("click", openRuleSheet);
 $("scoreCard").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openRuleSheet(); } });
