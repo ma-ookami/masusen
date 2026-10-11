@@ -156,6 +156,9 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .switch-row input:checked::before{transform:translateX(20px);background:var(--masu-ink)}
 .seg.two button[data-s="tabun"].on{background:var(--tabun);color:var(--tabun-ink)}
 .rule-hint{font-size:13px;color:var(--muted);margin:0}
+.rule-hint.warn{color:var(--coral);font-weight:700}
+.icon-btn.attn{position:relative}
+.icon-btn.attn::after{content:"";position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 2px var(--bg)}
 .in-wrap{position:relative;display:block;flex:1;min-width:0}
 .in-wrap .input{padding-right:58px}
 .count{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -499,6 +502,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
         <input class="input" id="cName" maxlength="24" placeholder="例:いつものメンバー" required></label>
       <label class="field"><span class="label">あなたの名前</span>
         <input class="input" id="cMe" maxlength="16" placeholder="例:たろう" required autocomplete="nickname"></label>
+      <label class="field"><span class="label">合言葉(数字4桁)</span>
+        <input class="input" id="cPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required autocomplete="off" placeholder="例:0000 以外の4桁">
+        <span class="rule-hint">機種変更やブラウザが変わったときに、作った本人だと確かめるために使います</span></label>
       <div class="field">
         <button type="button" class="rule-toggle" id="cRuleToggle" aria-expanded="false" aria-controls="cRuleBox"><span id="cRuleNow"></span><span class="muted">変える ›</span></button>
         <div id="cRuleBox" class="stack" hidden><div id="cRule" class="stack"></div></div>
@@ -703,7 +709,12 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
   </div>
   <div class="sec" id="creatorNote" data-tab="group" hidden>
-    <p class="rule-hint" style="margin:0">メンバーを外す・グループを削除する操作は、グループを作った端末からだけできます。</p>
+    <span class="label">グループの管理</span>
+    <p class="rule-hint" style="margin:0" id="creatorNoteText"></p>
+    <form class="inline" id="creatorVerifyForm" hidden>
+      <input class="input" id="creatorPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="合言葉(数字4桁)" enterkeyhint="done">
+      <button class="btn primary">確認</button>
+    </form>
   </div>
   <div class="sec" id="dangerSec" data-tab="manage" hidden>
     <span class="label">メンバー(作った人だけが外せます)</span>
@@ -900,7 +911,7 @@ function openGroup(gid, quiet){
     if (S.sel < S.day) S.sel = S.day;
   } else {
   closeSheets();
-  Object.assign(S, { gid, deniedFor:null, me:null, linkMid:null, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"", ansReady:false, festState:{} });
+  Object.assign(S, { gid, deniedFor:null, me:null, linkMid:null, linkVerified:false, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"", ansReady:false, festState:{} });
   planEditing = false;
   S.day = gameDay(); S.sel = S.day; S.month = S.day.slice(0, 7); S.calMonth = S.month;
   render();
@@ -932,6 +943,7 @@ function openGroup(gid, quiet){
     if (snap.metadata.hasPendingWrites) return;   // wait for the server's verdict
     const d = snap.exists ? snap.data() : null;
     S.linkMid = d && typeof d.mid === "string" ? d.mid : null;
+    S.linkVerified = !!(d && d.verified === true);
     if (!snap.metadata.fromCache || d) S.linkLoaded = true; else settle("linkLoaded");
     render();
   }, onSubError));
@@ -1260,6 +1272,7 @@ COUNTED.forEach(id => {
 function render(){
   queueMicrotask(updateCounters);
   const inGroup = s => { ["grpBtn","setBtn","shareBtn","calBtn"].forEach(id => $(id).hidden = !s); };
+  $("setBtn").classList.toggle("attn", !!(S.group && S.me && S.group.createdBy === S.me && S.members[S.me] && !S.members[S.me].hasPin));
   if (S.fatal){ $("errMsg").textContent = S.fatal; $("errHome").hidden = !S.db; inGroup(false); return show("sError"); }
   if (!S.db) return show("sLoading");
   if (!S.gid){ inGroup(false); renderHome(); return show("sHome"); }
@@ -1512,11 +1525,19 @@ function renderSheets(){
   if (isOpen("shCal")) renderCal();
   if (isOpen("shSet")){
     $("planToggle").checked = S.group.showPlan;
-    const creator = !!S.group.createdBy && S.group.createdBy === S.uid;
+    const creator = isCreatorHere();
     $("dangerSec").hidden = !creator;
     $("manageTab").hidden = !creator;
     if (!creator && setTab === "manage") showSetTab("me");
-    $("creatorNote").hidden = creator || S.group.createdBy !== S.me;
+    const linkedCreator = !creator && !!S.group.createdBy && S.group.createdBy === S.me;
+    $("creatorNote").hidden = !linkedCreator;
+    if (linkedCreator){
+      const hasPin = !!(S.members[S.me] && S.members[S.me].hasPin);
+      $("creatorNoteText").textContent = hasPin
+        ? "この端末でメンバーを外したりグループを削除したりするには、合言葉を入れてください。"
+        : "メンバーを外す・グループを削除する操作は、グループを作った端末からだけできます。作った端末で合言葉を設定すると、別の端末でも合言葉で管理できるようになります。";
+      $("creatorVerifyForm").hidden = !hasPin;
+    }
     if (creator) renderMemManage();
   }
   if (isOpen("shSet")) renderColorPick();
@@ -1533,10 +1554,16 @@ function renderSheets(){
   if (isOpen("shSet") && document.activeElement !== $("gNameInput") && !$("gNameInput").dataset.dirty) $("gNameInput").value = S.group.name;
   if (isOpen("shSet")){
     const me = S.members[S.me];
-    $("pinClear").hidden = !(me && me.hasPin);
-    $("pinHint").textContent = me && me.hasPin
-      ? "合言葉を設定済みです。別のスマホやブラウザから自分として入るときに必要です。"
-      : "設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。";
+    const iAmCreator = S.group.createdBy && S.group.createdBy === S.me;
+    $("pinClear").hidden = !(me && me.hasPin) || iAmCreator;
+    $("pinHint").classList.toggle("warn", !!(iAmCreator && !(me && me.hasPin)));
+    $("pinHint").textContent = iAmCreator
+      ? (me && me.hasPin
+          ? "グループを作った人は合言葉が必要です。機種変更やブラウザが変わったときに、作った本人だと確かめるために使います。"
+          : "グループを作った人は、合言葉を設定してください。機種変更やブラウザが変わったときに、作った本人だと確かめるために使います。")
+      : me && me.hasPin
+        ? "合言葉を設定済みです。別のスマホやブラウザから自分として入るときに必要です。"
+        : "設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。";
   }
   if (isOpen("shSet") && document.activeElement !== $("rName") && !$("rName").dataset.dirty) $("rName").value = S.members[S.me].name;
 }
@@ -1636,14 +1663,20 @@ $("pasteForm").addEventListener("submit", e => {
 });
 $("createForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const name = $("cName").value.trim(), me = $("cMe").value.trim();
+  const name = $("cName").value.trim(), me = $("cMe").value.trim(), pin = $("cPin").value.trim();
   if (!name || !me) return;
+  if (!/^[0-9]{4}$/.test(pin)) return toast("合言葉は数字4桁で入れてください", true);
   const gid = newId("g");
   $("cSubmit").disabled = true;
   try {
-    await withRetry(() => S.db.doc("groups/" + gid).set({ name, ...cPicker.get(), createdBy:S.uid, createdAt:Date.now() }));
-    await withRetry(() => S.db.doc(`groups/${gid}/members/${S.uid}`).set({ name:me, joinedAt:Date.now() }));
-    ls.set("name", me); $("cName").value = "";
+    // group, me and my passcode in one go, so they never end up half-saved
+    const now = Date.now(), hash = await pinHash(gid, S.uid, pin);
+    await withRetry(() => S.db.setMany([
+      ["groups/" + gid, { name, ...cPicker.get(), createdBy:S.uid, createdAt:now }],
+      [`groups/${gid}/members/${S.uid}`, { name:me, joinedAt:now, hasPin:true }],
+      [`groups/${gid}/pins/${S.uid}`, { hash }],
+    ]));
+    ls.set("name", me); $("cName").value = ""; $("cPin").value = "";
     go(gid);
     toast("できました!右上の 🔗 で招待リンクをコピーして、友達に送ってね");
   } catch (err){ onWriteError(err); }
@@ -1679,8 +1712,8 @@ async function saveColor(i){
   try { await saveMember({ color:i }); toast("保存しました"); }
   catch (err){ onWriteError(err); }
 }
-async function pinHash(mid, pin){
-  const data = new TextEncoder().encode(`${S.gid}:${mid}:${pin}`);
+async function pinHash(gid, mid, pin){
+  const data = new TextEncoder().encode(`${gid}:${mid}:${pin}`);
   const buf = await crypto.subtle.digest("SHA-256", data);
   return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, "0")).join("");
 }
@@ -1690,11 +1723,25 @@ async function setPin(pin){
     await withRetry(() => S.db.doc(`groups/${S.gid}/pins/${mid}`).delete());
     await saveMember({ hasPin:false });
   } else {
-    const hash = await pinHash(mid, pin);
+    const hash = await pinHash(S.gid, mid, pin);
     await withRetry(() => S.db.doc(`groups/${S.gid}/pins/${mid}`).set({ hash }));
     await saveMember({ hasPin:true });
   }
 }
+$("creatorVerifyForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const pin = $("creatorPin").value.trim(), mid = S.linkMid;
+  if (!/^[0-9]{4}$/.test(pin)) return toast("合言葉(数字4桁)を入れてください", true);
+  if (!mid) return;
+  const ref = S.db.doc(`groups/${S.gid}/links/${S.uid}`), at = Date.now();
+  try {
+    try { await withRetry(() => ref.set({ mid, at, pin, verified:true })); }
+    catch (err){ if (err && err.code === "invalid_argument"){ toast("合言葉が違います", true); return; } throw err; }
+    await withRetry(() => ref.set({ mid, at, verified:true }));
+    S.linkVerified = true; $("creatorPin").value = "";
+    render(); toast("確認できました。「管理」タブから操作できます");
+  } catch (err){ onWriteError(err); }
+});
 $("pinForm").addEventListener("submit", async e => {
   e.preventDefault();
   const pin = $("pinInput").value.trim();
@@ -1713,13 +1760,13 @@ $("claimBtn").addEventListener("click", async () => {
   const b = $("claimBtn"); b.disabled = true;
   const ref = S.db.doc(`groups/${S.gid}/links/${S.uid}`), at = Date.now();
   try {
-    try { await withRetry(() => ref.set(needPin ? { mid, at, pin } : { mid, at })); }
+    try { await withRetry(() => ref.set(needPin ? { mid, at, pin, verified:true } : { mid, at })); }
     catch (err){
       if (needPin && err && err.code === "invalid_argument"){ toast("合言葉が違います", true); return; }
       throw err;
     }
     // don't leave the passcode sitting in the link
-    if (needPin) await withRetry(() => ref.set({ mid, at }));
+    if (needPin) await withRetry(() => ref.set({ mid, at, verified:true }));
     $("claimPin").value = "";
     S.linkMid = mid; claimSel = null;
     ls.set("name", S.members[mid].name);
@@ -1791,6 +1838,13 @@ $("delBtn").addEventListener("click", async () => {
   }
 });
 let rmArmed = null, rmTimer = null;
+// creator powers: the creating browser, or a passcode-verified link to the creator who still has a passcode
+function isCreatorHere(){
+  const c = S.group && S.group.createdBy;
+  if (!c) return false;
+  if (c === S.uid) return true;
+  return S.linkMid === c && S.linkVerified && !!(S.members[c] && S.members[c].hasPin);
+}
 function renderMemManage(){
   const ids = Object.keys(S.members).sort((a, b) => S.members[a].joinedAt - S.members[b].joinedAt);
   $("memManage").replaceChildren(...ids.map(id => h("li", null,
@@ -1826,9 +1880,13 @@ async function deleteGroup(gid){
     // passcodes can't be listed; remove one per member (members come last, so this runs before them)
     if (sub === "links") Object.keys(S.members).forEach(mid => paths.push(`groups/${gid}/pins/${mid}`));
   }
-  if (S.db.deleteMany) await S.db.deleteMany(paths);
-  else for (const p of paths) await withRetry(() => S.db.doc(p).delete());
-  await withRetry(() => S.db.doc("groups/" + gid).delete());
+  // my link and the creator's passcode prove I'm the creator on another device; the rules check them
+  // before each write, so they go in the final batch together with the group itself
+  const creator = S.group && S.group.createdBy;
+  const keep = [`groups/${gid}/links/${S.uid}`, creator ? `groups/${gid}/pins/${creator}` : null].filter(Boolean);
+  const rest = paths.filter(x => !keep.includes(x));
+  await S.db.deleteMany(rest);
+  await S.db.deleteMany([...keep, "groups/" + gid]);
 }
 $("planToggle").addEventListener("change", async e => {
   const on = e.target.checked;
@@ -1944,7 +2002,12 @@ function makeDb(fsdb){
       await rethrow(batch.commit());
     }
   };
-  return { doc: p => docRef(fsdb.doc(p)), collection: p => colRef(fsdb.collection(p)), deleteMany };
+  const setMany = async entries => {
+    const batch = fsdb.batch();
+    entries.forEach(([p, d]) => batch.set(fsdb.doc(p), d));
+    await rethrow(batch.commit());
+  };
+  return { doc: p => docRef(fsdb.doc(p)), collection: p => colRef(fsdb.collection(p)), deleteMany, setMany };
 }
 
 // ---------- new-version check (GitHub Pages) ----------
