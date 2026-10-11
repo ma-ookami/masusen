@@ -158,6 +158,9 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .set-foot{margin:auto 0 0;padding-top:12px;font-size:12px;color:var(--muted);text-align:center;justify-content:center}
 .danger-zone{margin-top:22px;display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;border:1.5px solid color-mix(in srgb,var(--danger) 60%,var(--line));background:color-mix(in srgb,var(--danger) 8%,transparent)}
 .danger-zone .label{color:var(--danger)}
+.mhead-r{display:flex;align-items:center;gap:8px}
+.anon-btn{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;height:28px;padding:0 10px;font-size:12px;font-weight:800;white-space:nowrap}
+.anon-btn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .switch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;cursor:pointer}
 .switch-row input{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;margin:0;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
 .switch-row input::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--fg);transition:transform .2s}
@@ -301,7 +304,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .inline .input{flex:1;min-width:0}
 
 /* members */
-.mhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;flex:none}
+.mhead{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-bottom:8px;flex:none}
 .mhead h2{font-family:var(--f-body);font-weight:800;font-size:15px}
 .members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .mem .ago{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -589,7 +592,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
           </div>
         </div>
         <div class="card mem-card">
-          <div class="mhead"><h2 id="memTitle">返事</h2><span class="muted" id="answeredN" style="font-size:13px"></span></div>
+          <div class="mhead"><h2 id="memTitle">返事</h2><span class="mhead-r"><span class="muted" id="answeredN" style="font-size:13px"></span><button type="button" class="anon-btn" id="anonBtn" aria-pressed="false" title="名前を隠して表示">匿名表示</button></span></div>
           <ul class="members" id="memberList"></ul>
         </div>
       </div>
@@ -1121,14 +1124,14 @@ function agoText(t){
   if (hr < 24) return `${hr}時間前`;
   return `${Math.floor(hr / 24)}日前`;
 }
-function metaNodes(a, withStatusClass){
+function metaNodes(a, withStatusClass, hideComment){
   if (!a) return [];
   const out = [];
   const tt = timeText(a); if (tt) out.push(h("span", { class:"mtag time", text:tt }));
   const ct = cutText(a); if (ct) out.push(h("span", { class:"mtag", text:ct }));
   (a.conds || []).forEach(c => out.push(h("span", { class:"mtag" + (withStatusClass ? " " + a.status : ""), text:c })));
   if (a.game) out.push(h("span", { text:"🎮 " + a.game }));
-  if (a.comment) out.push(h("span", { text:"「" + a.comment + "」" }));
+  if (a.comment && !hideComment) out.push(h("span", { text:"「" + a.comment + "」" }));
   return out;
 }
 function cutText(a){ return a && a.status !== "sen" && a.cutoff != null ? `${hourLabel(a.cutoff)}にいなければ先に始めて` : ""; }
@@ -1298,7 +1301,7 @@ function render(){
     forgetGroup(S.gid);
     $("errHome").hidden = false; inGroup(false); return show("sError");
   }
-  $("grpName").textContent = S.group.name;
+  $("grpName").textContent = S.anon ? "グループ" : S.group.name;
   if (!S.membersLoaded || !S.linkLoaded) return show("sLoading");
   S.me = S.members[S.uid] ? S.uid : (S.linkMid && S.members[S.linkMid] ? S.linkMid : null);
   if (!S.me){ if (ansUnsub) stopDaySubs(); inGroup(false); renderJoin(); return show("sJoin"); }
@@ -1417,11 +1420,12 @@ function renderMain(){
     return order[sa] - order[sb] || S.members[a].joinedAt - S.members[b].joinedAt;
   });
   $("memTitle").textContent = `${relLabel(day)}の返事`;
-  $("memberList").replaceChildren(...sorted.map(id => {
+  $("memberList").replaceChildren(...sorted.map((id, i) => {
     const a = today[id], st = stOf(a), m = S.members[id];
-    const meta = metaNodes(a);
+    const meta = metaNodes(a, false, S.anon);
+    const shown = S.anon ? `メンバー${i + 1}` : m.name;
     return h("li", { class: "mem " + st },
-      h("div", { class:"nm" }, avatar(id, m.name), h("span", { class:"nm-t", text:m.name }), id === S.me ? h("em", { text:"あなた" }) : null),
+      h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null),
       h("span", { class:"ago", text: a ? agoText(a.updatedAt) : "" }),
       h("span", { class:"st " + (a ? st : ""), text: a ? `${STATUSES[st].ic} ${STATUSES[st].label}` : "… 未回答" }),
       meta.length ? h("div", { class:"meta" }, meta) : null);
@@ -1436,7 +1440,7 @@ function renderPlan(){
   if (!S.group.showPlan) return;
   const day = S.sel, plan = S.plans[day], ro = S.canWrite === false;
   $("planLabel").textContent = `${relLabel(day)}やること`;
-  $("planBy").textContent = plan && plan.by && S.members[plan.by] ? `${S.members[plan.by].name}が決めた` : "";
+  $("planBy").textContent = !S.anon && plan && plan.by && S.members[plan.by] ? `${S.members[plan.by].name}が決めた` : "";
   const v = $("planView");
   v.classList.toggle("empty", !plan);
   v.replaceChildren(plan ? plan.text : (ro ? "まだ決まってない" : "まだ決まってない ・ タップして書く"));
@@ -1663,6 +1667,12 @@ showSetTab("me");
 $("setBtn").addEventListener("click", () => {
  gPicker.set(S.group); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
+$("anonBtn").addEventListener("click", () => {
+  S.anon = !S.anon;
+  $("anonBtn").classList.toggle("on", S.anon); $("anonBtn").setAttribute("aria-pressed", String(S.anon));
+  render();
+  toast(S.anon ? "匿名表示にしました。もう一度押すと戻ります" : "名前の表示に戻しました");
+});
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
 
 const cPicker = rulePicker($("cRule"), () => 0, () => { $("cRuleNow").textContent = "開催のルール:" + ruleText(cPicker.get(), 0); });
