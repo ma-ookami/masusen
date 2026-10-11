@@ -165,6 +165,10 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .mhead-r{display:flex;align-items:center;gap:8px}
 .anon-btn{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;height:28px;padding:0 10px;font-size:12px;font-weight:800;white-space:nowrap}
 .anon-btn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+#shSet .sec.box{padding:12px 12px 14px;border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--surface-2) 55%,var(--surface));gap:8px}
+#shSet .box .input{background:var(--surface)}
+.box-h{margin:0 0 2px;font-family:var(--f-body);font-size:14px;font-weight:800;letter-spacing:.02em;color:var(--fg)}
+#shSet .box-note{margin:0;font-size:12px;color:var(--muted)}
 .switch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:700;cursor:pointer}
 .switch-row input{appearance:none;-webkit-appearance:none;flex:none;width:48px;height:28px;margin:0;border-radius:999px;background:var(--line);position:relative;cursor:pointer;transition:background .2s}
 .switch-row input::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--fg);transition:transform .2s}
@@ -596,9 +600,6 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
           <div class="mine-line" id="mineLine"></div>
           <button type="button" class="reload-btn" id="reloadBtn" aria-label="最新の状態に読み込み直す"><span class="ri" aria-hidden="true">↻</span>更新</button>
         </div>
-      </div>
-
-      <div class="col col-mem">
         <div class="card plan-card" id="planCard">
           <div class="plan-h"><span class="label" id="planLabel">今日やること</span><span class="by" id="planBy"></span></div>
           <button class="plan-v" id="planView"></button>
@@ -608,6 +609,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
             <div style="display:flex;justify-content:space-between"><button type="button" class="linkbtn" id="planClear">未定にもどす</button><button type="button" class="linkbtn" id="planCancel">やめる</button></div>
           </div>
         </div>
+      </div>
+
+      <div class="col col-mem">
         <div class="card mem-card">
           <div class="mhead"><h2 id="memTitle">返事</h2><span class="mhead-r"><span class="muted" id="answeredN" style="font-size:13px"></span><button type="button" class="anon-btn" id="anonBtn" aria-pressed="false" title="名前を隠して表示">匿名表示</button></span></div>
           <ul class="members" id="memberList"></ul>
@@ -695,40 +699,45 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <button type="button" role="tab" data-t="manage" id="manageTab" hidden>管理</button>
   </div>
   <div class="profile" id="profileHead" data-tab="me" aria-live="polite"></div>
-  <form class="sec" id="renameForm" data-tab="me">
-    <span class="label">自分の名前</span>
+  <form class="sec box" id="renameForm" data-tab="me">
+    <h3 class="box-h">名前</h3>
     <div class="inline"><input class="input" id="rName" maxlength="10" required enterkeyhint="done"><button class="btn primary">保存</button></div>
   </form>
-  <div class="sec" data-tab="me">
-    <span class="label">アイコンの色</span>
+  <div class="sec box" data-tab="me">
+    <h3 class="box-h">アイコン</h3>
+    <span class="label">色</span>
     <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
-    <span class="label" style="margin-top:6px">アイコンの形</span>
+    <span class="label" style="margin-top:4px">形</span>
     <div class="shapes" id="shapePick" role="radiogroup" aria-label="アイコンの形"></div>
-    <span class="label" style="margin-top:6px">いつもの返事(曜日ごと)</span>
+  </div>
+  <div class="sec box" data-tab="me">
+    <h3 class="box-h">いつもの返事(曜日ごと)</h3>
     <div class="weekly" id="weeklyPick"></div>
     <p class="rule-hint" style="margin:0">タップで「なし → ます → たぶん → せん」と切り替わります。その日だけ違うときは、返事のボタンを押せば上書きされます。祝日は使われません。</p>
   </div>
-  <form class="sec" id="pinForm" data-tab="me">
-    <span class="label">合言葉(数字4桁)</span>
+  <form class="sec box" id="pinForm" data-tab="me">
+    <h3 class="box-h">合言葉(数字4桁)</h3>
     <div class="inline"><input class="input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="例:0000 以外の4桁" enterkeyhint="done"><button class="btn primary" id="pinSave">保存</button></div>
     <p class="rule-hint" style="margin:0" id="pinHint">設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。</p>
     <button type="button" class="linkbtn" id="pinClear" hidden>合言葉を解除する</button>
   </form>
-  <form class="sec" id="gNameForm" data-tab="group">
-    <span class="label">グループ名(メンバーならだれでも変えられます)</span>
+  <p class="box-note" data-tab="group">グループの設定は、メンバーならだれでも変えられます。</p>
+  <form class="sec box" id="gNameForm" data-tab="group">
+    <h3 class="box-h">グループ名</h3>
     <div class="inline"><input class="input" id="gNameInput" maxlength="24" required enterkeyhint="done"><button class="btn primary">保存</button></div>
   </form>
-  <div class="sec" data-tab="group">
-    <span class="label">開催のルール(メンバーならだれでも変えられます)</span>
+  <div class="sec box" data-tab="group">
+    <h3 class="box-h">開催のルール</h3>
     <div id="gRule" class="stack"></div>
     <button type="button" class="btn primary" id="ruleSave" disabled>ルールを保存</button>
   </div>
-  <div class="sec" data-tab="group">
+  <div class="sec box" data-tab="group">
+    <h3 class="box-h">表示</h3>
     <label class="switch-row" for="planToggle"><span>「今日やること」を表示する</span><input type="checkbox" id="planToggle" role="switch"></label>
     <p class="rule-hint">オンにするとメンバー全員の画面に表示されます</p>
   </div>
-  <div class="sec" data-tab="other">
-    <span class="label">画面の明るさ</span>
+  <div class="sec box" data-tab="other">
+    <h3 class="box-h">画面の明るさ</h3>
     <div class="seg three" id="themePick" role="radiogroup" aria-label="画面の明るさ">
       <button type="button" role="radio" data-t="auto">自動</button>
       <button type="button" role="radio" data-t="dark">ダーク</button>
@@ -736,16 +745,15 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     </div>
     <p class="rule-hint">自動はスマホの設定に合わせます。この端末だけの設定です。</p>
   </div>
-  <div class="sec" data-tab="other">
+  <div class="sec box" data-tab="other">
+    <h3 class="box-h">グループ</h3>
     <button class="btn" id="switchBtn">ほかのグループに切り替える</button>
-  </div>
-  <div class="sec" data-tab="other">
-    <button type="button" class="btn danger" id="leaveBtn">このグループを抜ける</button>
+    <button type="button" class="btn danger" id="leaveBtn" style="margin-top:6px">このグループを抜ける</button>
     <p class="rule-hint" id="leaveHint">あなたの名前と返事がこのグループから消えます。招待リンクから、また参加できます。</p>
   </div>
   <p class="set-foot" data-tab="other">毎朝5時に新しい日に切り替わります(0時〜5時は前の日の続き)</p>
-  <div class="sec" id="creatorNote" data-tab="group" hidden>
-    <span class="label">グループの管理</span>
+  <div class="sec box" id="creatorNote" data-tab="group" hidden>
+    <h3 class="box-h">グループの管理</h3>
     <p class="rule-hint" style="margin:0" id="creatorNoteText"></p>
     <form class="inline" id="creatorVerifyForm" hidden>
       <input class="input" id="creatorPin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="合言葉(数字4桁)" enterkeyhint="done">
