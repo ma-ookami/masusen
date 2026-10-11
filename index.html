@@ -321,9 +321,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .profile .pf-name{font-size:17px;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .profile .pf-sub{font-size:12px;color:var(--muted);display:flex;gap:4px 8px;align-items:center;flex-wrap:wrap}
 .profile .pf-sub .lock{font-weight:700}
-.av{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;line-height:1;color:#fff;background:var(--avbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 16%,transparent)}
-.swatches{display:grid;grid-template-columns:repeat(7,34px);gap:8px}
-.swatch{width:34px;height:34px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:var(--avbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 16%,transparent);transition:transform .1s}
+.av{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;line-height:1;color:var(--avfg,#fff);background:var(--avbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 16%,transparent)}
+.swatches{display:grid;grid-template-columns:repeat(8,32px);gap:8px 6px}
+.swatch{width:32px;height:32px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:var(--avfg,#fff);background:var(--avbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 16%,transparent);transition:transform .1s}
 .swatch:active{transform:scale(.92)}
 .av.shape-badge{border-radius:0;clip-path:polygon(100.0% 50.0%,99.6% 52.2%,98.6% 54.2%,97.1% 56.2%,95.5% 58.0%,94.3% 59.8%,93.5% 61.6%,93.2% 63.6%,93.5% 65.8%,93.9% 68.2%,94.2% 70.6%,94.1% 72.9%,93.3% 75.0%,91.9% 76.7%,89.9% 78.0%,87.7% 78.9%,85.4% 79.7%,83.4% 80.6%,81.8% 81.8%,80.6% 83.4%,79.7% 85.4%,78.9% 87.7%,78.0% 89.9%,76.7% 91.9%,75.0% 93.3%,72.9% 94.1%,70.6% 94.2%,68.2% 93.9%,65.8% 93.5%,63.6% 93.2%,61.6% 93.5%,59.8% 94.3%,58.0% 95.5%,56.2% 97.1%,54.2% 98.6%,52.2% 99.6%,50.0% 100.0%,47.8% 99.6%,45.8% 98.6%,43.8% 97.1%,42.0% 95.5%,40.2% 94.3%,38.4% 93.5%,36.4% 93.2%,34.2% 93.5%,31.8% 93.9%,29.4% 94.2%,27.1% 94.1%,25.0% 93.3%,23.3% 91.9%,22.0% 89.9%,21.1% 87.7%,20.3% 85.4%,19.4% 83.4%,18.2% 81.8%,16.6% 80.6%,14.6% 79.7%,12.3% 78.9%,10.1% 78.0%,8.1% 76.7%,6.7% 75.0%,5.9% 72.9%,5.8% 70.6%,6.1% 68.2%,6.5% 65.8%,6.8% 63.6%,6.5% 61.6%,5.7% 59.8%,4.5% 58.0%,2.9% 56.2%,1.4% 54.2%,0.4% 52.2%,0.0% 50.0%,0.4% 47.8%,1.4% 45.8%,2.9% 43.8%,4.5% 42.0%,5.7% 40.2%,6.5% 38.4%,6.8% 36.4%,6.5% 34.2%,6.1% 31.8%,5.8% 29.4%,5.9% 27.1%,6.7% 25.0%,8.1% 23.3%,10.1% 22.0%,12.3% 21.1%,14.6% 20.3%,16.6% 19.4%,18.2% 18.2%,19.4% 16.6%,20.3% 14.6%,21.1% 12.3%,22.0% 10.1%,23.3% 8.1%,25.0% 6.7%,27.1% 5.9%,29.4% 5.8%,31.8% 6.1%,34.2% 6.5%,36.4% 6.8%,38.4% 6.5%,40.2% 5.7%,42.0% 4.5%,43.8% 2.9%,45.8% 1.4%,47.8% 0.4%,50.0% 0.0%,52.2% 0.4%,54.2% 1.4%,56.2% 2.9%,58.0% 4.5%,59.8% 5.7%,61.6% 6.5%,63.6% 6.8%,65.8% 6.5%,68.2% 6.1%,70.6% 5.8%,72.9% 5.9%,75.0% 6.7%,76.7% 8.1%,78.0% 10.1%,78.9% 12.3%,79.7% 14.6%,80.6% 16.6%,81.8% 18.2%,83.4% 19.4%,85.4% 20.3%,87.7% 21.1%,89.9% 22.0%,91.9% 23.3%,93.3% 25.0%,94.1% 27.1%,94.2% 29.4%,93.9% 31.8%,93.5% 34.2%,93.2% 36.4%,93.5% 38.4%,94.3% 40.2%,95.5% 42.0%,97.1% 43.8%,98.6% 45.8%,99.6% 47.8%)}
 .av.shape-squircle{border-radius:28%}
@@ -949,7 +949,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.collection("members").onSnapshot(snap => {
     if (S.gid !== gid) return;
     const m = {};
-    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 12, null), hasPin:d.hasPin === true, shape:Object.hasOwn(SHAPES, d.shape || "") ? d.shape : "circle" }; });
+    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 15, null), hasPin:d.hasPin === true, shape:Object.hasOwn(SHAPES, d.shape || "") ? d.shape : "circle" }; });
     S.members = m;
     if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
     render();
@@ -1095,23 +1095,27 @@ function colorIndex(id){
   let x = 0; for (const ch of String(id)) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
   return x % 12;
 }
-const AV_COLORS = 13;            // 12 hues + black
+// stored color numbers: 0–11 soft hues, 12 black, 13–15 vivid red / blue / yellow
+const AV_ORDER = [0,1,2,3,4,5,6,7,8,9,10,11,13,14,15,12];   // order shown in the picker
+const AV_VIVID = { 13:"#e60012", 14:"#0068d9", 15:"#ffd400" };
+const AV_NAMES = { 12:"黒", 13:"赤", 14:"青", 15:"黄" };
 // icon shapes; the CSS class "shape-<key>" draws each one (circle is the plain .av)
 const SHAPES = { circle:"まる", squircle:"角丸", badge:"バッジ", flower:"お花", hexagon:"六角形" };
-const avBg = i => i === 12 ? "#141318" : `hsl(${i * 30} 55% 44%)`;
+const avBg = i => i === 12 ? "#141318" : AV_VIVID[i] || `hsl(${i * 30} 55% 44%)`;
+const avStyle = i => `--avbg:${avBg(i)};--avfg:${i === 15 ? "#2b1d00" : "#fff"}`;
 function avatar(id, name){
   const m = S.members[id], shape = m && m.shape && m.shape !== "circle" ? m.shape : "";
-  return h("span", { class:"av" + (shape ? " shape-" + shape : ""), style:`--avbg:${avBg(colorIndex(id))}`, "aria-hidden":"true", text:[...(name || "?")][0] });
+  return h("span", { class:"av" + (shape ? " shape-" + shape : ""), style:avStyle(colorIndex(id)), "aria-hidden":"true", text:[...(name || "?")][0] });
 }
 function renderColorPick(){
   const mid = (S.me || S.uid), m = S.members[mid]; if (!m) return;
   const cur = colorIndex(mid), ch = [...(m.name || "?")][0], curShape = m.shape || "circle";
   $("shapePick").replaceChildren(...Object.keys(SHAPES).map(k => h("button", { type:"button", class:"shape-opt" + (k === curShape ? " on" : ""),
     role:"radio", "aria-checked":String(k === curShape), onclick:() => saveShape(k) },
-    h("span", { class:"av" + (k === "circle" ? "" : " shape-" + k), style:`--avbg:${avBg(cur)}`, "aria-hidden":"true", text:ch }),
+    h("span", { class:"av" + (k === "circle" ? "" : " shape-" + k), style:avStyle(cur), "aria-hidden":"true", text:ch }),
     h("span", { text:SHAPES[k] }))));
-  $("colorPick").replaceChildren(...Array.from({ length:AV_COLORS }, (_, i) => h("button", { type:"button", class:"swatch" + (i === cur ? " on" : ""),
-    style:`--avbg:${avBg(i)}`, role:"radio", "aria-checked":String(i === cur), "aria-label": i === 12 ? "黒" : `色${i + 1}`,
+  $("colorPick").replaceChildren(...AV_ORDER.map(i => h("button", { type:"button", class:"swatch" + (i === cur ? " on" : ""),
+    style:avStyle(i), role:"radio", "aria-checked":String(i === cur), "aria-label": AV_NAMES[i] || `色${i + 1}`,
     onclick:() => saveColor(i) }, ch)));
 }
 // how long ago, in the coarsest unit that fits

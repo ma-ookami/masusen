@@ -81,7 +81,7 @@ service cloud.firestore {
       return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape'])
         && isText(d.name, 1, 16)
         && d.joinedAt is int
-        && (!('color' in d) || intIn(d.color, 0, 12))
+        && (!('color' in d) || intIn(d.color, 0, 15))
         && d.get('hasPin', false) is bool
         && d.get('shape', 'circle') in ['circle', 'squircle', 'badge', 'flower', 'hexagon'];
     }
