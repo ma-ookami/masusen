@@ -94,6 +94,12 @@ button{cursor:pointer}
 .mascot .wave{opacity:.85;transition:opacity .3s}
 .mascot.happy .wave{animation:mWave 1.2s ease-in-out infinite}
 .mascot.sad .wave{opacity:.25} .mascot.sleep .wave{opacity:0}
+.mascot .zzz{display:none}
+.mascot.sleep .zzz{display:inline}
+.mascot .zzz text{opacity:0;animation:mZ 3s ease-out infinite}
+.mascot .zzz text:nth-child(2){animation-delay:1s} .mascot .zzz text:nth-child(3){animation-delay:2s}
+@keyframes mZ{0%{opacity:0;transform:translate(0,0)}25%{opacity:1}100%{opacity:0;transform:translate(6px,-9px)}}
+@media (prefers-reduced-motion: reduce){ .mascot .zzz text{opacity:1} .mascot .zzz text:nth-child(2){transform:translate(3px,-4px)} .mascot .zzz text:nth-child(3){transform:translate(6px,-8px)} }
 @keyframes mBulb{50%{fill:#ffe066}}
 @keyframes mWave{0%,100%{opacity:.15}50%{opacity:1}}
 @media (min-width:880px){ .mascot.lcd{margin-right:0} }
@@ -2265,9 +2271,15 @@ $("calNext").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMont
 // LCD: a yellow frame with a dark screen; the face glows. head: "antenna" or "signal"
 const MASCOT_HEADS = {
   antenna: `<g class="ant"><rect x="15.2" y="0.8" width="1.6" height="4.5" fill="var(--masu-deep)"/><circle class="bulb" cx="16" cy="1.3" r="1.9"/></g>`,
-  signal: `<rect x="15.2" y="2.5" width="1.6" height="3" fill="var(--masu-deep)"/><circle cx="16" cy="2.3" r="1.1" fill="var(--masu-deep)"/>
-    <path class="wave" d="M12.8 1.6 Q16 -1.4 19.2 1.6" fill="none" stroke="var(--masu-deep)" stroke-width="1.1" stroke-linecap="round"/>`,
+  headphones: "",
 };
+// drawn over the body
+const MASCOT_OVER = {
+  headphones: `<g class="hp"><path d="M3.5 13 Q3.5 1.5 16 1.5 Q28.5 1.5 28.5 13" fill="none" stroke="#3a3f52" stroke-width="2.2"/>
+    <rect x="0" y="11" width="4.2" height="8" rx="2" fill="#3a3f52"/><rect x="27.8" y="11" width="4.2" height="8" rx="2" fill="#3a3f52"/></g>`,
+};
+const MASCOT_ZZZ = `<g class="zzz" fill="var(--muted)" font-family="var(--f-body),sans-serif" font-weight="800">
+  <text x="25" y="8" font-size="5">z</text><text x="25" y="8" font-size="6.5">z</text><text x="25" y="8" font-size="8">z</text></g>`;
 function lcdMascot(head){
   const G = "#ffd54a", st = `fill="none" stroke="${G}" stroke-width="1.6" stroke-linecap="square"`;
   const eyes = `<g class="eyes"><rect x="10" y="10" width="3" height="4" fill="${G}"/><rect x="19" y="10" width="3" height="4" fill="${G}"/></g>`;
@@ -2280,10 +2292,10 @@ function lcdMascot(head){
   };
   const lines = [8,10,12,14,16,18,20].map(y => `<rect x="6" y="${y}" width="20" height=".5" fill="#fff" opacity=".05"/>`).join("");
   return `<svg viewBox="0 0 32 34" aria-hidden="true">${MASCOT_HEADS[head]}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="var(--masu-deep)"/><rect x="2" y="3" width="28" height="22" rx="5" fill="var(--masu)"/>
-    <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="#1d2230"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}</g></svg>`;
+    <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="#1d2230"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}</g>${MASCOT_OVER[head] || ""}${MASCOT_ZZZ}</svg>`;
 }
 $("mascot").innerHTML = lcdMascot("antenna");
-$("mascot2").innerHTML = lcdMascot("signal");
+$("mascot2").innerHTML = lcdMascot("headphones");
 const MASCOT_MOVES = ["blink", "hop", "wiggle", "spin"];
 const mascots = () => [$("mascot"), $("mascot2")];
 function setMascotMood(m){ mascots().forEach(el => ["happy", "sad", "sleep"].forEach(k => el.classList.toggle(k, k === m))); }
