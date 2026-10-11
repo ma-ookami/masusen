@@ -56,6 +56,8 @@
 }
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
+/* keep room for the scrollbar even when nothing scrolls, so the layout never shifts sideways */
+html{scrollbar-gutter:stable}
 body{color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-tap-highlight-color:transparent}
 body.sheet-open{overflow:hidden}
 button,input{font:inherit;color:inherit}
@@ -86,7 +88,7 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .muted{color:var(--muted)}
 .field{display:flex;flex-direction:column;gap:6px}
 .input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:16px}
-.input::placeholder{color:var(--muted)}
+.input::placeholder{color:var(--muted);opacity:.6;font-weight:400}
 .btn{border-radius:14px;padding:12px 18px;font-weight:800;background:var(--surface-2);border:1px solid var(--line)}
 .btn.primary{background:var(--masu);color:var(--masu-ink);border-color:transparent;box-shadow:0 4px 0 var(--masu-deep)}
 .btn.primary:active{transform:translateY(3px);box-shadow:0 1px 0 var(--masu-deep)}
@@ -107,9 +109,24 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .screen{display:flex;flex-direction:column;gap:14px}
 .hero{text-align:center;padding-block:18px 6px}
 .hero .big{font-family:var(--f-display);font-size:clamp(44px,13vw,72px);line-height:1.05;margin:0}
+.hero .big.home{font-size:clamp(20px,6.4vw,38px);line-height:1.35;letter-spacing:.04em;white-space:nowrap}
+#sHome .hero{padding-block:10px 0}
+#sHome{font-weight:700;letter-spacing:.02em;font-size:16px}
+#sHome .label{font-size:13px}
+#sHome .rule-hint,#sHome .muted{font-size:13px}
+#sHome .steps li{font-size:13px}
+#sHome .home-actions .btn{font-size:15px}
+#sHome .input{font-weight:700}
+.home-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.home-actions .btn{padding:12px 6px;font-size:14px}
+.home-actions .btn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.steps li{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:12px;font-weight:700;padding:10px 6px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.steps b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--masu);color:var(--masu-ink);font-size:13px}
+.rule-toggle{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px dashed var(--line);background:transparent;color:var(--fg);font-weight:700;font-size:14px}
 .hero .big .m{color:var(--masu)} .hero .big .s{color:var(--sen);filter:brightness(1.4)}
 .hero p{margin:10px 0 0;color:var(--muted)}
-.stepper{display:flex;align-items:center;gap:12px}
+.stepper{display:flex;align-items:center;justify-content:center;gap:12px}
 .stepper button{width:44px;height:44px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);font-size:20px;font-weight:800}
 .stepper output{font-family:var(--f-display);font-size:28px;min-width:1.6em;text-align:center;font-variant-numeric:tabular-nums}
 .glist{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
@@ -156,7 +173,7 @@ body.fit .main>.col{gap:10px}
 body.fit .col-mem{flex:1;min-height:170px}
 .mem-card{display:flex;flex-direction:column;padding:12px 12px 10px}
 body.fit .mem-card{flex:1;min-height:0}
-body.fit .members{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+body.fit .members{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 @media (min-width:880px){
   body.fit .main{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:stretch}
   body.fit .main>.col:last-child{position:static}
@@ -278,6 +295,11 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .mem .nm .nm-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:24px}
 .mem .nm em{flex:none;display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;background:var(--surface);
   font-style:normal;font-size:11px;line-height:1;color:var(--muted);font-weight:700}
+.profile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px 16px;border-radius:16px;background:var(--surface-2);text-align:center}
+.profile .av{width:64px;height:64px;font-size:28px;box-shadow:0 0 0 3px var(--surface-2),0 0 0 5px color-mix(in srgb,hsl(var(--h) 55% 44%) 60%,transparent)}
+.profile .pf-name{font-size:18px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile .pf-sub{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.profile .pf-sub .lock{font-weight:700}
 .av{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;line-height:1;color:#fff;background:hsl(var(--h) 55% 44%)}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .swatch{width:34px;height:34px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:hsl(var(--h) 55% 44%);transition:transform .1s}
@@ -305,7 +327,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center;background:var(--scrim);animation:fade .18s}
-.sheet .panel{width:100%;max-width:560px;max-height:88%;overflow:auto;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:up .24s cubic-bezier(.2,.9,.3,1)}
+.sheet .panel{width:100%;max-width:560px;max-height:88%;overflow:auto;scrollbar-gutter:stable;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:22px 22px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:up .24s cubic-bezier(.2,.9,.3,1)}
 .sheet .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:-4px auto 0}
 .sheet .sh{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .sheet .x{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);font-size:16px}
@@ -431,27 +453,38 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 
   <section class="screen" id="sHome" hidden>
     <div class="hero">
-      <p class="big"><span class="m">ます</span>か?<br><span class="s">せん</span>か?</p>
-      <p>ゲームできるか、ボタンひとつで返事。<br>そろったら開催!</p>
+      <p class="big home">集まれ<span class="m">ます</span>か?ま<span class="s">せん</span>か?</p>
+      <p>ゲームできるか、ボタンひとつで返事。そろったら開催!</p>
     </div>
+    <ol class="steps" id="homeSteps" hidden>
+      <li><b>1</b>グループをつくる</li>
+      <li><b>2</b>🔗 で招待リンクを友達に送る</li>
+      <li><b>3</b>遊べる日に「ます」をポチッ</li>
+    </ol>
     <div class="card stack" id="myGroupsCard" hidden>
       <h2>参加中のグループ</h2>
       <ul class="glist" id="myGroups"></ul>
     </div>
-    <form class="card stack" id="pasteForm">
+    <div class="home-actions">
+      <button type="button" class="btn" id="openCreate" aria-expanded="false" aria-controls="createForm">+ グループをつくる</button>
+      <button type="button" class="btn" id="openPaste" aria-expanded="false" aria-controls="pasteForm">🔗 招待リンクで参加</button>
+    </div>
+    <form class="card stack" id="pasteForm" hidden>
       <h2>招待リンクで参加</h2>
       <div class="inline"><input class="input" id="pasteInput" inputmode="url" autocomplete="off" placeholder="招待リンクを貼り付け"><button class="btn">開く</button></div>
-      <p class="rule-hint" style="margin:0">ホーム画面のアプリから参加するときは、LINEなどで受け取ったリンクをコピーしてここに貼ってください。</p>
+      <p class="rule-hint" style="margin:0">LINEなどで受け取ったリンクを貼ってください</p>
     </form>
-    <form class="card stack" id="createForm">
-      <h2>グループをつくる</h2>
+    <form class="card stack" id="createForm" hidden>
+      <div><h2>グループをつくる</h2><p class="muted" style="margin:4px 0 0">ぜんぶ、あとから設定で変えられます</p></div>
       <label class="field"><span class="label">グループ名</span>
-        <input class="input" id="cName" maxlength="24" placeholder="いつものメンバー" required></label>
-      <div class="field"><span class="label">開催のルール</span><div id="cRule" class="stack"></div></div>
+        <input class="input" id="cName" maxlength="24" placeholder="例:いつものメンバー" required></label>
       <label class="field"><span class="label">あなたの名前</span>
         <input class="input" id="cMe" maxlength="16" placeholder="例:たろう" required autocomplete="nickname"></label>
-      <button class="btn primary" id="cSubmit">つくってリンクを手に入れる</button>
-      <p class="muted" style="margin:0;font-size:12px">入力するのは名前だけ。つくったらリンクを友達に送れば参加できます。</p>
+      <div class="field">
+        <button type="button" class="rule-toggle" id="cRuleToggle" aria-expanded="false" aria-controls="cRuleBox"><span id="cRuleNow"></span><span class="muted">変える ›</span></button>
+        <div id="cRuleBox" class="stack" hidden><div id="cRule" class="stack"></div></div>
+      </div>
+      <button class="btn primary" id="cSubmit">グループをつくる</button>
     </form>
   </section>
 
@@ -611,26 +644,26 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <button type="button" role="tab" data-t="other">その他</button>
     <button type="button" role="tab" data-t="manage" id="manageTab" hidden>管理</button>
   </div>
+  <div class="profile" id="profileHead" data-tab="me" aria-live="polite"></div>
   <form class="sec" id="renameForm" data-tab="me">
     <span class="label">自分の名前</span>
-    <div class="inline"><input class="input" id="rName" maxlength="16" required><button class="btn">変更</button></div>
+    <div class="inline"><input class="input" id="rName" maxlength="16" required enterkeyhint="done"><button class="btn primary">保存</button></div>
     <span class="label" style="margin-top:6px">アイコンの色</span>
     <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
   </form>
   <form class="sec" id="pinForm" data-tab="me">
     <span class="label">合言葉(数字4桁・任意)</span>
-    <div class="inline"><input class="input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="例:0000 以外の4桁"><button class="btn" id="pinSave">設定</button></div>
+    <div class="inline"><input class="input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="例:0000 以外の4桁" enterkeyhint="done"><button class="btn primary" id="pinSave">保存</button></div>
     <p class="rule-hint" style="margin:0" id="pinHint">設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。</p>
     <button type="button" class="linkbtn" id="pinClear" hidden>合言葉を解除する</button>
   </form>
   <form class="sec" id="gNameForm" data-tab="group">
     <span class="label">グループ名(メンバーならだれでも変えられます)</span>
-    <div class="inline"><input class="input" id="gNameInput" maxlength="24" required><button class="btn">変更</button></div>
+    <div class="inline"><input class="input" id="gNameInput" maxlength="24" required enterkeyhint="done"><button class="btn primary">保存</button></div>
   </form>
   <div class="sec" data-tab="group">
     <span class="label">開催のルール(メンバーならだれでも変えられます)</span>
     <div id="gRule" class="stack"></div>
-    <button class="btn primary" id="ruleSave">ルールを保存</button>
   </div>
   <div class="sec" data-tab="group">
     <label class="switch-row" for="planToggle"><span>「今日やること」を表示する</span><input type="checkbox" id="planToggle" role="switch"></label>
@@ -842,7 +875,7 @@ function onSubError(e){
 }
 function openGroup(gid, quiet){
   if (gid && !quiet) S.diffPending = true;
-  if (gid && !quiet) ls.set("last", gid);
+  if (gid && !quiet){ ls.set("last", gid); bumpGroup(gid); }
   stopSubs();
   if (quiet){
     S.deniedFor = null;
@@ -959,6 +992,14 @@ async function loadMyGroups(){
     S.myGroups = merged; ls.set("groups", merged);
   } catch {}
 }
+// most recently opened group goes to the top of the home list
+function bumpGroup(id){
+  const i = S.myGroups.findIndex(g => g.id === id);
+  if (i <= 0) return;                       // not listed yet, or already first
+  S.myGroups = [S.myGroups[i], ...S.myGroups.slice(0, i), ...S.myGroups.slice(i + 1)];
+  ls.set("groups", S.myGroups);
+  if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), { groups:S.myGroups.slice(0, 30) });
+}
 function forgetGroup(id){
   if (!S.myGroups.some(g => g.id === id)) return;
   S.myGroups = S.myGroups.filter(g => g.id !== id);
@@ -1054,18 +1095,19 @@ function stepper(get, set, min, max, unit){
     h("button", { type:"button", "aria-label":"減らす", onclick:() => upd(get() - 1) }, "−"), out, h("span", { text:unit }),
     h("button", { type:"button", "aria-label":"増やす", onclick:() => upd(get() + 1) }, "+"));
 }
-function rulePicker(root, memberCount){
+function rulePicker(root, memberCount, onChange){
   let st = cleanRule({});
+  const changed = () => { if (onChange) onChange(); };
   const draw = () => {
     const seg = h("div", { class:"seg", role:"radiogroup" },
       [["count","人数を\n決める"],["ratio","何人中\n何人"],["open","集まった\n人でやる"]].map(([k, l]) =>
-        h("button", { type:"button", role:"radio", "aria-checked":String(st.rule === k), class: st.rule === k ? "on" : "", onclick:() => { st.rule = k; draw(); } },
+        h("button", { type:"button", role:"radio", "aria-checked":String(st.rule === k), class: st.rule === k ? "on" : "", onclick:() => { st.rule = k; draw(); changed(); } },
           ...l.split("\n").flatMap((p, i) => i ? [h("br"), p] : [p]))));
     let detail;
-    if (st.rule === "count") detail = stepper(() => st.quorum, v => { st.quorum = v; hint.textContent = ruleText(st, memberCount()); }, 1, 20, "人そろったら開催");
+    if (st.rule === "count") detail = stepper(() => st.quorum, v => { st.quorum = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, 20, "人そろったら開催");
     else if (st.rule === "ratio") detail = h("div", { class:"chips" }, Object.keys(RATIOS).map(k =>
-      h("button", { type:"button", class:"chip" + (st.ratio === k ? " on" : ""), onclick:() => { st.ratio = k; draw(); } }, RATIOS[k].label)));
-    else detail = stepper(() => st.minOpen, v => { st.minOpen = v; hint.textContent = ruleText(st, memberCount()); }, 1, 20, "人いればやる");
+      h("button", { type:"button", class:"chip" + (st.ratio === k ? " on" : ""), onclick:() => { st.ratio = k; draw(); changed(); } }, RATIOS[k].label)));
+    else detail = stepper(() => st.minOpen, v => { st.minOpen = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, 20, "人いればやる");
     const hint = h("p", { class:"rule-hint", text:ruleText(st, memberCount()) });
     const extra = st.rule === "ratio" ? h("p", { class:"rule-hint", text:"メンバーが増えたら、必要な人数も自動で増えます。" })
       : st.rule === "open" ? h("p", { class:"rule-hint", text:"何人そろうかより、集まった人で遊ぶグループ向け。" }) : null;
@@ -1196,7 +1238,20 @@ function render(){
   show("sMain");
 }
 
+let homeOpen;          // undefined until the first render decides; then null | "create" | "paste"
+function setHomeOpen(which){
+  homeOpen = which;
+  $("createForm").hidden = which !== "create";
+  $("pasteForm").hidden = which !== "paste";
+  [["openCreate","create"],["openPaste","paste"]].forEach(([id, w]) => {
+    $(id).classList.toggle("on", which === w); $(id).setAttribute("aria-expanded", String(which === w));
+  });
+}
 function renderHome(){
+  const first = !S.myGroups.length;
+  $("homeSteps").hidden = !first;
+  if (homeOpen === undefined) setHomeOpen(first ? "create" : null);
+  $("cRuleNow").textContent = "開催のルール:" + ruleText(cPicker.get(), 0);
   $("myGroups").replaceChildren(...S.myGroups.map(g => h("li", null,
     h("button", { onclick: () => go(g.id) }, h("span", {text:g.name || "グループ"}), h("span", {class:"muted", text:"開く ›"})))));
   $("myGroupsCard").hidden = !S.myGroups.length;
@@ -1422,11 +1477,19 @@ function renderSheets(){
     if (creator) renderMemManage();
   }
   if (isOpen("shSet")) renderColorPick();
+  if (isOpen("shSet") && S.members[S.me]){
+    const me = S.members[S.me];
+    $("profileHead").replaceChildren(
+      avatar(S.me, me.name),
+      h("div", { class:"pf-name", text:me.name }),
+      h("div", { class:"pf-sub" },
+        h("span", { text:`「${S.group.name}」でのあなた` }),
+        h("span", { class:"lock", text: me.hasPin ? "🔒 合言葉あり" : "合言葉なし" })));
+  }
   if (isOpen("shSet") && document.activeElement !== $("gNameInput") && !$("gNameInput").dataset.dirty) $("gNameInput").value = S.group.name;
   if (isOpen("shSet")){
     const me = S.members[S.me];
     $("pinClear").hidden = !(me && me.hasPin);
-    $("pinSave").textContent = me && me.hasPin ? "変更" : "設定";
     $("pinHint").textContent = me && me.hasPin
       ? "合言葉を設定済みです。別のスマホやブラウザから自分として入るときに必要です。"
       : "設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。";
@@ -1524,9 +1587,16 @@ $("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rN
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
 
-const cPicker = rulePicker($("cRule"), () => 0);
-const gPicker = rulePicker($("gRule"), () => Object.keys(S.members).length);
+const cPicker = rulePicker($("cRule"), () => 0, () => { $("cRuleNow").textContent = "開催のルール:" + ruleText(cPicker.get(), 0); });
+const gPicker = rulePicker($("gRule"), () => Object.keys(S.members).length, () => scheduleRuleSave());
 
+$("openCreate").addEventListener("click", () => { setHomeOpen(homeOpen === "create" ? null : "create"); if (homeOpen) $("cName").focus(); });
+$("openPaste").addEventListener("click", () => { setHomeOpen(homeOpen === "paste" ? null : "paste"); if (homeOpen) $("pasteInput").focus(); });
+$("cRuleToggle").addEventListener("click", () => {
+  const open = $("cRuleBox").hidden;
+  $("cRuleBox").hidden = !open; $("cRuleToggle").setAttribute("aria-expanded", String(open));
+  $("cRuleToggle").lastElementChild.textContent = open ? "閉じる" : "変える ›";
+});
 $("pasteForm").addEventListener("submit", e => {
   e.preventDefault();
   const m = $("pasteInput").value.match(/#(g[a-z0-9]{6,20})/);
@@ -1545,7 +1615,7 @@ $("createForm").addEventListener("submit", async e => {
     await withRetry(() => S.db.doc(`groups/${gid}/members/${S.uid}`).set({ name:me, joinedAt:Date.now() }));
     ls.set("name", me); $("cName").value = "";
     go(gid);
-    toast("できました!共有ボタンから招待リンクを送ってね");
+    toast("できました!右上の 🔗 で招待リンクをコピーして、友達に送ってね");
   } catch (err){ onWriteError(err); }
   finally { $("cSubmit").disabled = S.canWrite === false; }
 });
@@ -1569,7 +1639,7 @@ async function saveName(name){
 async function saveColor(i){
   const mid = S.me || S.uid, prev = S.members[mid]; if (!prev) return;
   S.members = { ...S.members, [mid]: { ...prev, color:i } }; render();
-  try { await saveMember({ color:i }); }
+  try { await saveMember({ color:i }); toast("保存しました"); }
   catch (err){ onWriteError(err); }
 }
 async function pinHash(mid, pin){
@@ -1592,7 +1662,7 @@ $("pinForm").addEventListener("submit", async e => {
   e.preventDefault();
   const pin = $("pinInput").value.trim();
   if (!/^[0-9]{4}$/.test(pin)) return toast("合言葉は数字4桁で入れてください", true);
-  try { await setPin(pin); $("pinInput").value = ""; render(); toast("合言葉を設定しました。忘れないようにしてください"); }
+  try { await setPin(pin); $("pinInput").value = ""; render(); toast("保存しました。合言葉は忘れないようにしてください"); }
   catch (err){ onWriteError(err); }
 });
 $("pinClear").addEventListener("click", async () => {
@@ -1633,7 +1703,7 @@ $("rName").addEventListener("input", () => { $("rName").dataset.dirty = "1"; });
 $("renameForm").addEventListener("submit", async e => {
   e.preventDefault();
   const name = $("rName").value.trim(); if (!name) return;
-  try { await saveName(name); delete $("rName").dataset.dirty; render(); toast("名前を変えました"); }
+  try { await saveName(name); delete $("rName").dataset.dirty; render(); toast("保存しました"); }
   catch (err){ onWriteError(err); }
 });
 $("gNameInput").addEventListener("input", () => { $("gNameInput").dataset.dirty = "1"; });
@@ -1644,14 +1714,20 @@ $("gNameForm").addEventListener("submit", async e => {
   try {
     await withRetry(() => S.db.doc("groups/" + S.gid).update({ name }));
     S.group = { ...S.group, name }; delete $("gNameInput").dataset.dirty;
-    render(); toast(`グループ名を「${name}」にしました`);
+    render(); toast("保存しました");
   } catch (err){ onWriteError(err); }
 });
-$("ruleSave").addEventListener("click", async () => {
-  const r = gPicker.get();
-  try { await withRetry(() => S.db.doc("groups/" + S.gid).update(r)); toast("ルールを保存しました:" + ruleText(r, Object.keys(S.members).length)); closeSheets(); }
-  catch (err){ onWriteError(err); }
-});
+// a burst of +/− taps becomes one write
+let ruleTimer = null;
+function scheduleRuleSave(){
+  clearTimeout(ruleTimer);
+  ruleTimer = setTimeout(async () => {
+    const r = gPicker.get(), g = S.group;
+    if (!g || (r.rule === g.rule && r.quorum === g.quorum && r.ratio === g.ratio && r.minOpen === g.minOpen)) return;
+    try { await withRetry(() => S.db.doc("groups/" + S.gid).update(r)); toast("保存しました:" + ruleText(r, Object.keys(S.members).length)); }
+    catch (err){ onWriteError(err); }
+  }, 1000);
+}
 $("switchBtn").addEventListener("click", () => go(null));
 // two taps: the first arms the button, the second (within 5 s) deletes
 let delArmed = null;
@@ -1720,7 +1796,7 @@ async function deleteGroup(gid){
 $("planToggle").addEventListener("change", async e => {
   const on = e.target.checked;
   S.group = { ...S.group, showPlan:on }; render();
-  try { await withRetry(() => S.db.doc("groups/" + S.gid).update({ showPlan:on })); toast(on ? "「今日やること」を表示します" : "「今日やること」を非表示にしました"); }
+  try { await withRetry(() => S.db.doc("groups/" + S.gid).update({ showPlan:on })); toast(on ? "保存しました:「今日やること」を表示します" : "保存しました:「今日やること」を表示しません"); }
   catch (err){ onWriteError(err); }
 });
 
@@ -1853,7 +1929,7 @@ function applyTheme(){
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() || "#15131d";
 }
-$("themePick").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (!b) return; ls.set("theme", b.dataset.t); applyTheme(); });
+$("themePick").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (!b) return; ls.set("theme", b.dataset.t); applyTheme(); toast("保存しました"); });
 applyTheme();
 
 // ---------- connection banner ----------
