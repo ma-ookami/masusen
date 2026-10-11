@@ -260,6 +260,8 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .wd .me.masu{background:var(--masu);border:0} .wd .me.tabun{background:var(--tabun);border:0} .wd .me.sen{background:var(--sen);border:0}
 .wd.sel{border:2px solid var(--fg);background:var(--surface-2)}
 .wd.held{background:var(--masu);color:var(--masu-ink);border-color:var(--masu)}
+.wd.skipd{background:var(--sky);color:var(--sky-ink);border-color:var(--sky)}
+.wd.skipd .c,.wd.skipd .dn,.wd.skipd:not(.today):not(.tmrw) .w{color:var(--sky-ink)}
 .wd.held .c,.wd.held .dn,.wd.held:not(.today):not(.tmrw) .w{color:var(--masu-ink)}
 .wd.held.sel{border-color:var(--fg);box-shadow:0 0 0 2px var(--bg) inset}
 .wd .ov{position:absolute;top:3px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--coral)}
@@ -799,7 +801,7 @@ const S = {
   members:{}, membersLoaded:false,
   answers:{}, overrides:{}, plans:{}, day:"", sel:"", month:"",
   calMonth:"", monthCache:{},
-  myGroups:[], fatal:null, unsubs:[], prevFest:"",
+  myGroups:[], owned:[], fatal:null, unsubs:[], prevFest:"",
 };
 
 const ls = {
@@ -842,7 +844,7 @@ const isHoliday = d => holidaysOf(Number(d.slice(0, 4))).has(d);
 function relLabel(d){ return d === S.day ? "今日" : d === addDays(S.day, 1) ? "明日" : dayLabel(d, true); }
 function shiftMonth(ym, delta){ const [y,m] = ym.split("-").map(Number); return new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7); }
 function weekDays(){ return Array.from({length:7}, (_, i) => addDays(S.day, i)); }
-function startDay(){ const a = S.day.slice(0, 8) + "01", b = addDays(S.day, -7); return a < b ? a : b; }
+function startDay(){ return S.day; }
 
 // ---------- helpers ----------
 function h(tag, attrs, ...kids){
@@ -1039,12 +1041,16 @@ function noteChanges(gid){
 }
 
 // ---------- my groups ----------
+// groups this browser has created (kept with the group list; the rules cap it)
+const MAX_OWNED = 3;
+const userDoc = () => ({ groups:S.myGroups.slice(0, 30), owned:S.owned.slice(0, MAX_OWNED) });
 async function loadMyGroups(){
   S.myGroups = ls.get("groups", []);
   if (!S.uid || !S.db) return;
   try {
     const snap = await S.db.doc(`users/${S.uid}`).get();
     const remote = snap.exists && Array.isArray(snap.data().groups) ? snap.data().groups : [];
+    S.owned = snap.exists && Array.isArray(snap.data().owned) ? snap.data().owned.filter(x => typeof x === "string").slice(0, MAX_OWNED) : [];
     const merged = [...S.myGroups];
     remote.forEach(g => { if (g && typeof g.id === "string" && !merged.some(x => x.id === g.id)) merged.push({id:str(g.id,40), name:str(g.name,24)}); });
     S.myGroups = merged; ls.set("groups", merged);
@@ -1056,20 +1062,20 @@ function bumpGroup(id){
   if (i <= 0) return;                       // not listed yet, or already first
   S.myGroups = [S.myGroups[i], ...S.myGroups.slice(0, i), ...S.myGroups.slice(i + 1)];
   ls.set("groups", S.myGroups);
-  if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), { groups:S.myGroups.slice(0, 30) });
+  if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), userDoc());
 }
 function forgetGroup(id){
   if (!S.myGroups.some(g => g.id === id)) return;
   S.myGroups = S.myGroups.filter(g => g.id !== id);
   ls.set("groups", S.myGroups);
-  if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), { groups:S.myGroups.slice(0, 30) });
+  if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), userDoc());
 }
 function rememberGroup(id, name){
   const i = S.myGroups.findIndex(g => g.id === id);
   if (i >= 0 && S.myGroups[i].name === name) return;
   if (i >= 0) S.myGroups[i] = {id, name}; else S.myGroups.unshift({id, name});
   ls.set("groups", S.myGroups);
-  if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), { groups:S.myGroups.slice(0, 30) });
+  if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), userDoc());
 }
 
 // ---------- rules ----------
@@ -1441,15 +1447,18 @@ function renderMain(){
   // week strip
   $("week").replaceChildren(...weekDays().map((d, i) => {
     const n = masuCount(d), r = needFor(d), held = n >= r.need && n > 0, my = mineOn(d);
+    const ad = answersFor(d), mids = Object.keys(S.members);
+    const tb = mids.filter(id => ad[id] && ad[id].status === "tabun").length;
+    const skipped = !held && mids.length > 0 && mids.every(id => ad[id]) && n + tb < r.need;
     const t = parseDay(d);
     const wdN = t.getUTCDay();
-    return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),
-        "aria-label": `${dayLabel(d)} ます${n}人` + (held ? " 開催" : "") + (my ? ` 自分は${STATUSES[my.status].label}` : " 自分は未回答"),
+    return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : skipped ? " skipd" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),
+        "aria-label": `${dayLabel(d)} ます${n}人` + (held ? " 開催" : skipped ? " スキップ" : "") + (my ? ` 自分は${STATUSES[my.status].label}` : " 自分は未回答"),
         onclick: () => { S.sel = d; planEditing = false; render(); } },
       S.overrides[d] ? h("span", { class:"ov" }) : null,
       h("span", { class:"w", text: i === 0 ? "今日" : i === 1 ? "明日" : DOW[t.getUTCDay()] }),
       h("span", { class:"dn", text: t.getUTCDate() }),
-      h("span", { class:"c", text: held ? "★開催" : n ? `◎${n}` : "" }));
+      h("span", { class:"c", text: held ? "★開催" : skipped ? "スキップ" : n ? `◎${n}` : "" }));
   }));
 
   // buttons
@@ -1650,8 +1659,7 @@ async function renderCal(){
   const maxMonth = addDays(S.day, 6).slice(0, 7);
   $("calNext").disabled = ym >= maxMonth;
   let list, ovs = S.overrides;
-  if (ym >= ansFrom.slice(0, 7) && ym <= maxMonth && ansFrom <= ym + "-01") list = Object.values(S.answers).filter(a => a.day.startsWith(ym));
-  else if (S.monthCache[ym]) ({ list, ovs } = S.monthCache[ym]);
+  if (S.monthCache[ym]) ({ list, ovs } = S.monthCache[ym]);
   else {
     $("cal").replaceChildren(h("div", { style:"grid-column:1/-1", class:"muted", text:"読み込み中…" }));
     try {
@@ -1663,6 +1671,17 @@ async function renderCal(){
     } catch { $("cal").replaceChildren(h("div", { style:"grid-column:1/-1", class:"muted", text:"読み込めませんでした。閉じてもう一度開いてください" })); return; }
     if (S.calMonth !== ym || !isOpen("shCal")) return;
     ({ list, ovs } = S.monthCache[ym]);
+  }
+  // days from today on are live: let the current answers/overrides win over the fetched copy
+  if (ym >= S.month){
+    const byId = {};
+    list.forEach(a => { byId[a.day + "_" + a.uid] = a; });
+    Object.entries(S.answers).forEach(([k, a]) => { if (a.day.startsWith(ym)) byId[k] = a; });
+    Object.keys(byId).forEach(k => { const a = byId[k]; if (a.day >= S.day && !S.answers[k]) delete byId[k]; });
+    list = Object.values(byId);
+    ovs = { ...ovs };
+    Object.keys(ovs).forEach(d => { if (d >= S.day && !S.overrides[d]) delete ovs[d]; });
+    Object.assign(ovs, Object.fromEntries(Object.entries(S.overrides).filter(([d]) => d.startsWith(ym))));
   }
   const cnt = {};
   list.forEach(a => { if (isMasu(a) && S.members[a.uid]) cnt[a.day] = (cnt[a.day] || 0) + 1; });
@@ -1724,7 +1743,7 @@ $("anonBtn").addEventListener("click", () => {
   render();
   toast(S.anon ? "匿名表示にしました。もう一度押すと戻ります" : "名前の表示に戻しました");
 });
-$("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
+$("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); delete S.monthCache[S.month]; openSheet("shCal"); });
 
 const cPicker = rulePicker($("cRule"), () => 0, () => { $("cRuleNow").textContent = "開催のルール:" + ruleText(cPicker.get(), 0); });
 const gPicker = rulePicker($("gRule"), () => Object.keys(S.members).length, () => updateRuleSave());
@@ -1748,6 +1767,7 @@ $("createForm").addEventListener("submit", async e => {
   const name = $("cName").value.trim(), me = $("cMe").value.trim(), pin = $("cPin").value.trim();
   if (!name || !me) return;
   if (!/^[0-9]{4}$/.test(pin)) return toast("合言葉は数字4桁で入れてください", true);
+  if (S.owned.length >= MAX_OWNED) return toast(`作れるグループは${MAX_OWNED}つまでです。使わなくなったグループを削除すると、また作れます`, true);
   const gid = newId("g");
   $("cSubmit").disabled = true;
   try {
@@ -1757,7 +1777,9 @@ $("createForm").addEventListener("submit", async e => {
       ["groups/" + gid, { name, ...cPicker.get(), createdBy:S.uid, createdAt:now }],
       [`groups/${gid}/members/${S.uid}`, { name:me, joinedAt:now, hasPin:true }],
       [`groups/${gid}/pins/${S.uid}`, { hash }],
+      [`users/${S.uid}`, { groups:[{ id:gid, name }, ...S.myGroups].slice(0, 30), owned:[...S.owned, gid] }],
     ]));
+    S.owned = [...S.owned, gid];
     ls.set("name", me); $("cName").value = ""; $("cPin").value = "";
     go(gid);
     toast("できました!右上の 🔗 で招待リンクをコピーして、友達に送ってね");
@@ -1945,6 +1967,7 @@ $("delBtn").addEventListener("click", async () => {
   const gid = S.gid, name = S.group.name;
   try {
     await deleteGroup(gid);
+    S.owned = S.owned.filter(x => x !== gid);
     forgetGroup(gid);
     b.disabled = false; b.classList.remove("armed"); b.textContent = "このグループを削除する";
     go(null);

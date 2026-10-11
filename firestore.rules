@@ -10,13 +10,14 @@ rules_version = '2';
 // - グループ名・開催ルール・その日だけの人数・今日やることはメンバーなら誰でも変えられる
 // - メンバーを外す・グループを削除するのは、グループを作った端末(ブラウザ)だけ。
 //   作った人が合言葉を設定していれば、合言葉で入り直した別の端末からもできる
-// - 参加中グループの一覧(users/<uid>)は本人だけ
+// - 参加中グループの一覧(users/<uid>)は本人だけ。グループを作れるのは1ブラウザ3つまで
 // - 保存できる項目と長さは、アプリが使うものだけに制限する
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ---------- helpers ----------
     function signedIn() { return request.auth != null; }
+    function userPath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
     function groupPath(gid) { return /databases/$(database)/documents/groups/$(gid); }
     function memberPath(gid, mid) { return /databases/$(database)/documents/groups/$(gid)/members/$(mid); }
     function pinPath(gid, mid) { return /databases/$(database)/documents/groups/$(gid)/pins/$(mid); }
@@ -104,9 +105,12 @@ service cloud.firestore {
     match /groups/{gid} {
       allow get: if signedIn();
       allow list: if false;
+      // creating a group also lists it under the creator's "owned" (at most 3), in the same batch
       allow create: if signedIn() && validGroup(request.resource.data)
         && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.createdAt is int;
+        && request.resource.data.createdAt is int
+        && getAfter(userPath()).data.get('owned', []).hasAny([gid])
+        && getAfter(userPath()).data.get('owned', []).size() <= 3;
       allow update: if isMember(gid) && validGroup(request.resource.data)
         && request.resource.data.get('createdBy', '') == resource.data.get('createdBy', '')
         && request.resource.data.get('createdAt', 0) == resource.data.get('createdAt', 0);
@@ -191,9 +195,11 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow write: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['groups'])
+        && request.resource.data.keys().hasOnly(['groups', 'owned'])
         && request.resource.data.groups is list
-        && request.resource.data.groups.size() <= 30;
+        && request.resource.data.groups.size() <= 30
+        && request.resource.data.get('owned', []) is list
+        && request.resource.data.get('owned', []).size() <= 3;
     }
   }
 }
