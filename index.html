@@ -262,12 +262,14 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .mhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;flex:none}
 .mhead h2{font-family:var(--f-body);font-weight:800;font-size:15px}
 .members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.mem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;align-items:center;padding:5px 10px 5px 12px;border-radius:12px;background:var(--surface-2);border-left:5px solid var(--none)}
+.mem .ago{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mem{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:5px 10px 5px 12px;border-radius:12px;background:var(--surface-2);border-left:5px solid var(--none)}
 .mem.masu{border-left-color:var(--masu)} .mem.tabun{border-left-color:var(--tabun)} .mem.sen{border-left-color:var(--sen)}
 
 .mem .nm{font-weight:800;min-width:0;display:flex;align-items:center;gap:8px}
-.mem .nm .nm-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mem .nm em{flex:none;margin-left:0}
+.mem .nm .nm-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:24px}
+.mem .nm em{flex:none;display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;background:var(--surface);
+  font-style:normal;font-size:11px;line-height:1;color:var(--muted);font-weight:700}
 .av{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;line-height:1;color:#fff;background:hsl(var(--h) 55% 44%)}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .swatch{width:34px;height:34px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:hsl(var(--h) 55% 44%);transition:transform .1s}
@@ -277,7 +279,6 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .by-line .lbl{font-size:12px;color:var(--muted);font-weight:700}
 .chip.with-av{display:inline-flex;align-items:center;gap:6px;padding-left:6px}
 .mlist li .who{display:flex;align-items:center;gap:8px;min-width:0}
-.mem .nm em{font-style:normal;font-size:11px;color:var(--muted);font-weight:700;margin-left:6px}
 .mem .meta{grid-column:1/-1;font-size:12px;color:var(--muted);overflow-wrap:anywhere;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:3px}
 .mtag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.5;color:var(--fg);border:1.5px solid color-mix(in srgb,var(--fg) 55%,transparent);background:transparent}
 .mtag.time{background:var(--fg);color:var(--bg);border-color:var(--fg)}
@@ -607,6 +608,10 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <div class="inline"><input class="input" id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="off" placeholder="例:0000 以外の4桁"><button class="btn" id="pinSave">設定</button></div>
     <p class="rule-hint" style="margin:0" id="pinHint">設定すると、別のスマホやブラウザから自分として入るときに合言葉が必要になります。ほかの人があなたになりすますのを防げます。</p>
     <button type="button" class="linkbtn" id="pinClear" hidden>合言葉を解除する</button>
+  </form>
+  <form class="sec" id="gNameForm">
+    <span class="label">グループ名(メンバーならだれでも変えられます)</span>
+    <div class="inline"><input class="input" id="gNameInput" maxlength="24" required><button class="btn">変更</button></div>
   </form>
   <div class="sec">
     <span class="label">開催のルール(メンバーならだれでも変えられます)</span>
@@ -998,6 +1003,16 @@ function renderColorPick(){
     style:`--h:${i * 30}`, role:"radio", "aria-checked":String(i === cur), "aria-label":`色${i + 1}`,
     onclick:() => saveColor(i) }, ch)));
 }
+// how long ago, in the coarsest unit that fits
+function agoText(t){
+  if (!t) return "";
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "たった今";
+  if (m < 60) return `${m}分前`;
+  const hr = Math.floor(m / 60);
+  if (hr < 24) return `${hr}時間前`;
+  return `${Math.floor(hr / 24)}日前`;
+}
 function metaNodes(a, withStatusClass){
   if (!a) return [];
   const out = [];
@@ -1253,6 +1268,7 @@ function renderMain(){
     const meta = metaNodes(a);
     return h("li", { class: "mem " + st },
       h("div", { class:"nm" }, avatar(id, m.name), h("span", { class:"nm-t", text:m.name }), id === S.me ? h("em", { text:"あなた" }) : null),
+      h("span", { class:"ago", text: a ? agoText(a.updatedAt) : "" }),
       h("span", { class:"st " + (a ? st : ""), text: a ? `${STATUSES[st].ic} ${STATUSES[st].label}` : "… 未回答" }),
       meta.length ? h("div", { class:"meta" }, meta) : null);
   }));
@@ -1376,6 +1392,7 @@ function renderSheets(){
     if (creator) renderMemManage();
   }
   if (isOpen("shSet")) renderColorPick();
+  if (isOpen("shSet") && document.activeElement !== $("gNameInput") && !$("gNameInput").dataset.dirty) $("gNameInput").value = S.group.name;
   if (isOpen("shSet")){
     const me = S.members[S.me];
     $("pinClear").hidden = !(me && me.hasPin);
@@ -1466,7 +1483,7 @@ $("reloadBtn").addEventListener("click", async () => {
 });
 $("errHome").addEventListener("click", () => { S.fatal = null; go(null); });
 $("grpBtn").addEventListener("click", () => go(null));
-$("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rName").dataset.dirty; openSheet("shSet"); });
+$("setBtn").addEventListener("click", () => { gPicker.set(S.group); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); openSheet("shCal"); });
 
@@ -1581,6 +1598,17 @@ $("renameForm").addEventListener("submit", async e => {
   const name = $("rName").value.trim(); if (!name) return;
   try { await saveName(name); delete $("rName").dataset.dirty; render(); toast("名前を変えました"); }
   catch (err){ onWriteError(err); }
+});
+$("gNameInput").addEventListener("input", () => { $("gNameInput").dataset.dirty = "1"; });
+$("gNameForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = $("gNameInput").value.trim().slice(0, 24); if (!name) return;
+  if (name === S.group.name){ delete $("gNameInput").dataset.dirty; return; }
+  try {
+    await withRetry(() => S.db.doc("groups/" + S.gid).update({ name }));
+    S.group = { ...S.group, name }; delete $("gNameInput").dataset.dirty;
+    render(); toast(`グループ名を「${name}」にしました`);
+  } catch (err){ onWriteError(err); }
 });
 $("ruleSave").addEventListener("click", async () => {
   const r = gPicker.get();
