@@ -84,10 +84,14 @@ button{cursor:pointer}
 .mascot:not(.happy):not(.sad):not(.sleep) .f-normal,.mascot.happy .f-happy,.mascot.sad .f-sad,.mascot.sleep .f-sleep{display:inline}
 .mascot .eyes{transform-box:fill-box;transform-origin:center}
 .mascot.blink .eyes{animation:mBlink .3s steps(2)}
-.mascot{height:30px}
-.mascot.lcd{width:30px;height:32px;margin:0 2px 0 auto}
+.mascots{flex:none;display:flex;align-items:flex-end;gap:4px;margin:-6px 0 -2px}
+.mascot.lcd{width:34px;height:40px;margin:0}
+.mascot svg{object-fit:contain}
 .mascot .ant{transform-box:view-box;transform-origin:16px 7px;transition:transform .4s cubic-bezier(.3,1.4,.5,1)}
 .mascot.sad .ant{transform:rotate(-28deg)}
+/* the headphone view starts 4 units higher, so the antenna bases sit at y=11 in view-box terms */
+.mascot .antL{transform-origin:10.5px 11px} .mascot .antR{transform-origin:21.5px 11px}
+.mascot.sad .antL{transform:rotate(-35deg)} .mascot.sad .antR{transform:rotate(35deg)}
 .mascot .bulb{fill:#ff6b5a;transition:fill .3s}
 .mascot.happy .bulb{animation:mBulb .9s steps(1) infinite}
 .mascot.sleep .bulb{fill:#8a8a8a}
@@ -102,7 +106,7 @@ button{cursor:pointer}
 @media (prefers-reduced-motion: reduce){ .mascot .zzz text{opacity:1} .mascot .zzz text:nth-child(2){transform:translate(3px,-4px)} .mascot .zzz text:nth-child(3){transform:translate(6px,-8px)} }
 @keyframes mBulb{50%{fill:#ffe066}}
 @keyframes mWave{0%,100%{opacity:.15}50%{opacity:1}}
-@media (min-width:880px){ .mascot.lcd{margin-right:0} }
+
 .mascot.hop svg{animation:mHop .75s cubic-bezier(.3,1.5,.5,1)}
 .mascot.wiggle svg{animation:mWig .6s ease}
 .mascot.spin svg{transform-origin:50% 55%;animation:mSpin .7s cubic-bezier(.3,1.3,.5,1)}
@@ -337,8 +341,13 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .mine-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
 .mine-row .mine-line{flex:1;min-width:0;justify-content:flex-start;text-align:left}
 @media (min-width:880px){ .reload-btn{display:none!important} }
-.reload-btn{flex:none;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:800}
-.reload-btn .ri{display:inline-block;font-size:15px;line-height:1}
+.reload-btn{position:fixed;z-index:30;right:max(14px,env(safe-area-inset-right));bottom:max(16px,calc(env(safe-area-inset-bottom) + 8px));
+  width:44px;height:44px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:50%;
+  background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  color:var(--fg);box-shadow:0 4px 14px rgba(0,0,0,.14);-webkit-tap-highlight-color:transparent}
+.reload-btn:active{transform:scale(.92)}
+@media (max-width:879px){ #sMain{padding-bottom:56px} }  /* keep the last rows clear of the floating button */
+.reload-btn .ri{display:inline-block;font-size:20px;font-weight:800;line-height:1}
 .reload-btn.spin .ri{animation:sp .6s linear infinite}
 .opt-btn{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:800;color:var(--fg)}
 
@@ -526,7 +535,6 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 <div class="wrap">
   <header class="top">
     <div class="logo" aria-label="ますせん"><span class="m">ます</span><span class="s">せん</span></div>
-    <button type="button" class="mascot lcd-top" id="mascot" aria-label="ますくん" title="ますくん"></button>
     <div class="grp">
       <button class="grp-btn" id="grpBtn" hidden><span id="grpName"></span></button>
       <button class="icon-btn" id="shareBtn" hidden aria-label="招待リンクをコピー" title="招待リンクをコピー">🔗</button>
@@ -641,9 +649,12 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
         </div>
         <div class="mine-row">
           <div class="mine-line" id="mineLine"></div>
-          <button type="button" class="mascot lcd" id="mascot2" aria-label="ますくん(液晶)" title="ますくん"></button>
-          <button type="button" class="reload-btn" id="reloadBtn" aria-label="最新の状態に読み込み直す"><span class="ri" aria-hidden="true">↻</span>更新</button>
+          <div class="mascots">
+            <button type="button" class="mascot lcd" id="mascot" aria-label="ますくん" title="ますくん"></button>
+            <button type="button" class="mascot lcd" id="mascot2" aria-label="ますくん(ヘッドホン)" title="ますくん"></button>
+          </div>
         </div>
+        <button type="button" class="reload-btn" id="reloadBtn" aria-label="最新の状態に読み込み直す" title="最新の状態に読み込み直す"><span class="ri" aria-hidden="true">↻</span></button>
         <div class="card plan-card" id="planCard">
           <div class="plan-h"><span class="label" id="planLabel">今日やること</span><span class="by" id="planBy"></span></div>
           <button class="plan-v" id="planView"></button>
@@ -2271,8 +2282,11 @@ $("calNext").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMont
 // LCD: a yellow frame with a dark screen; the face glows. head: "antenna" or "signal"
 const MASCOT_HEADS = {
   antenna: `<g class="ant"><rect x="15.2" y="0.8" width="1.6" height="4.5" fill="var(--masu-deep)"/><circle class="bulb" cx="16" cy="1.3" r="1.9"/></g>`,
-  headphones: "",
+  headphones: `<g class="ant antL"><path d="M10.5 7 L7.5 -1.5" stroke="var(--masu-deep)" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="7.3" cy="-2" r="1.6"/></g>
+    <g class="ant antR"><path d="M21.5 7 L24.5 -1.5" stroke="var(--masu-deep)" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="24.7" cy="-2" r="1.6"/></g>`,
 };
+// room above the body for taller heads
+const MASCOT_VIEW = { headphones:"0 -4 32 38" };
 // drawn over the body
 const MASCOT_OVER = {
   headphones: `<g class="hp"><path d="M3.5 13 Q3.5 1.5 16 1.5 Q28.5 1.5 28.5 13" fill="none" stroke="#3a3f52" stroke-width="2.2"/>
@@ -2291,7 +2305,7 @@ function lcdMascot(head){
     sleep: `<g opacity=".55"><path d="M10 12.5 H13" ${st}/><path d="M19 12.5 H22" ${st}/><path d="M15 17 H17" ${st}/></g>` + led("#e66"),
   };
   const lines = [8,10,12,14,16,18,20].map(y => `<rect x="6" y="${y}" width="20" height=".5" fill="#fff" opacity=".05"/>`).join("");
-  return `<svg viewBox="0 0 32 34" aria-hidden="true">${MASCOT_HEADS[head]}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="var(--masu-deep)"/><rect x="2" y="3" width="28" height="22" rx="5" fill="var(--masu)"/>
+  return `<svg viewBox="${MASCOT_VIEW[head] || "0 0 32 34"}" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${MASCOT_HEADS[head]}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="var(--masu-deep)"/><rect x="2" y="3" width="28" height="22" rx="5" fill="var(--masu)"/>
     <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="#1d2230"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}</g>${MASCOT_OVER[head] || ""}${MASCOT_ZZZ}</svg>`;
 }
 $("mascot").innerHTML = lcdMascot("antenna");
