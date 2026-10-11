@@ -345,6 +345,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .shapes{display:flex;flex-wrap:wrap;gap:10px}
 .weekly{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .wk{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 7px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-weight:800}
+.wk.pick{outline:3px solid var(--fg);outline-offset:1px}
+.wk-edit{display:flex;flex-direction:column;gap:6px;padding:10px;border-radius:12px;background:var(--surface);border:1px dashed var(--line)}
+.wk-edit .chips{gap:6px}
 .wk .wk-d{font-size:12px;color:var(--muted)} .wk.sun .wk-d{color:var(--sun)} .wk.sat .wk-d{color:var(--sat)}
 .wk .wk-v{font-size:16px;line-height:1.2;color:var(--muted)}
 .wk.masu{background:var(--masu);border-color:var(--masu)} .wk.masu .wk-v,.wk.masu .wk-d{color:var(--masu-ink)}
@@ -712,8 +715,10 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   </div>
   <div class="sec box" data-tab="me">
     <h3 class="box-h">いつもの返事(曜日ごと)</h3>
-    <div class="weekly" id="weeklyPick"></div>
-    <p class="rule-hint" style="margin:0">タップで「なし → ます → たぶん → せん」と切り替わります。その日だけ違うときは、返事のボタンを押せば上書きされます。祝日は使われません。</p>
+    <div class="weekly" id="weeklyPick" role="tablist" aria-label="曜日"></div>
+    <div class="wk-edit" id="weeklyEdit"></div>
+    <button type="button" class="btn primary" id="weeklySave" disabled>いつもの返事を保存</button>
+    <p class="rule-hint" style="margin:0">曜日を選んで、返事とタグを決めてから保存してください。その日だけ違うときは、返事のボタンを押せば上書きされます。祝日は使われません。</p>
   </div>
   <form class="sec box" id="pinForm" data-tab="me">
     <h3 class="box-h">合言葉(数字4桁)</h3>
@@ -1118,9 +1123,17 @@ function needFor(day, ovs = S.overrides){
 // weekly defaults: { "0":"sen", "5":"masu" } (0 = Sunday)
 function cleanWeekly(w){
   const out = {};
-  if (w && typeof w === "object") for (let i = 0; i < 7; i++){ const v = w[String(i)]; if (STATUSES[v]) out[String(i)] = v; }
+  if (w && typeof w === "object") for (let i = 0; i < 7; i++){
+    const v = w[String(i)];
+    const st = typeof v === "string" ? v : v && v.status;
+    if (!STATUSES[st]) continue;
+    const allowed = st === "sen" ? SEN_TAGS : CONDS;
+    const conds = v && Array.isArray(v.conds) ? v.conds.filter(c => allowed.includes(c)).slice(0, 16) : [];
+    out[String(i)] = { status:st, conds };
+  }
   return out;
 }
+// { status, conds } for that member on that day, or null (never on holidays)
 function weeklyOf(id, day){
   const m = S.members[id];
   if (!m || !m.weekly || isHoliday(day)) return null;
@@ -1131,8 +1144,8 @@ function answersFor(day){
   for (const k in S.answers){ const a = S.answers[k]; if (a.day === day && S.members[a.uid]) out[a.uid] = a; }
   for (const id in S.members){
     if (out[id]) continue;
-    const st = weeklyOf(id, day);
-    if (st) out[id] = { uid:id, day, status:st, from:null, until:null, cutoff:null, game:"", conds:[], comment:"", updatedAt:0, usual:true };
+    const u = weeklyOf(id, day);
+    if (u) out[id] = { uid:id, day, status:u.status, from:null, until:null, cutoff:null, game:"", conds:[...u.conds], comment:"", updatedAt:0, usual:true };
   }
   return out;
 }
@@ -1164,17 +1177,36 @@ function avatar(id, name){
   const m = S.members[id], shape = m && m.shape && m.shape !== "circle" ? m.shape : "";
   return h("span", { class:"av" + (shape ? " shape-" + shape : ""), style:avStyle(colorIndex(id)), "aria-hidden":"true", text:[...(name || "?")][0] });
 }
-const WEEKLY_CYCLE = [null, "masu", "tabun", "sen"];
+// edits happen on a draft; "いつもの返事を保存" writes it
+let wkDraft = null, wkSel = 1;
+const wkJson = w => JSON.stringify(Object.keys(w || {}).sort().map(k => [k, w[k].status, [...w[k].conds].sort()]));
 function renderWeeklyPick(){
   const mid = S.me || S.uid, m = S.members[mid]; if (!m) return;
-  const w = m.weekly || {};
+  if (!wkDraft) wkDraft = JSON.parse(JSON.stringify(m.weekly || {}));
   $("weeklyPick").replaceChildren(...DOW.map((dn, i) => {
-    const v = w[String(i)] || null;
-    return h("button", { type:"button", class:"wk " + (v || "none") + (i === 0 ? " sun" : i === 6 ? " sat" : ""),
-      "aria-label":`${dn}曜日:${v ? STATUSES[v].label : "なし"}`,
-      onclick:() => saveWeekly(i, WEEKLY_CYCLE[(WEEKLY_CYCLE.indexOf(v) + 1) % WEEKLY_CYCLE.length]) },
-      h("span", { class:"wk-d", text:dn }), h("span", { class:"wk-v", text: v ? STATUSES[v].ic : "ー" }));
+    const v = wkDraft[String(i)];
+    return h("button", { type:"button", role:"tab", "aria-selected":String(i === wkSel),
+      class:"wk " + (v ? v.status : "none") + (i === wkSel ? " pick" : "") + (i === 0 ? " sun" : i === 6 ? " sat" : ""),
+      "aria-label":`${dn}曜日:${v ? STATUSES[v.status].label : "なし"}`, onclick:() => { wkSel = i; renderWeeklyPick(); } },
+      h("span", { class:"wk-d", text:dn }), h("span", { class:"wk-v", text: v ? STATUSES[v.status].ic : "ー" }));
   }));
+  // the chosen weekday's answer and tags
+  const cur = wkDraft[String(wkSel)];
+  const setStatus = st => {
+    if (!st) delete wkDraft[String(wkSel)];
+    else wkDraft[String(wkSel)] = { status:st, conds: cur && (cur.status === "sen") === (st === "sen") ? cur.conds : [] };
+    renderWeeklyPick();
+  };
+  const opts = [[null, "なし"], ["masu", "◎ ます"], ["tabun", "△ たぶん"], ["sen", "× せん"]];
+  const tags = cur ? (cur.status === "sen" ? SEN_TAGS : CONDS) : [];
+  $("weeklyEdit").replaceChildren(
+    h("span", { class:"label", text:`${DOW[wkSel]}曜日のいつもの返事` }),
+    h("div", { class:"chips" }, opts.map(([st, label]) => h("button", { type:"button",
+      class:"chip sm" + ((cur ? cur.status : null) === st ? " on" : ""), onclick:() => setStatus(st) }, label))),
+    cur ? h("span", { class:"label", text: cur.status === "sen" ? "理由(いくつでも・なくてもOK)" : "条件(いくつでも・なくてもOK)" }) : null,
+    cur ? h("div", { class:"chips" }, tags.map(t => h("button", { type:"button", class:"chip sm" + (cur.conds.includes(t) ? " on" : ""),
+      onclick:() => { cur.conds = cur.conds.includes(t) ? cur.conds.filter(x => x !== t) : [...cur.conds, t]; renderWeeklyPick(); } }, t))) : null);
+  $("weeklySave").disabled = wkJson(wkDraft) === wkJson(m.weekly);
 }
 function renderColorPick(){
   renderWeeklyPick();
@@ -1512,7 +1544,7 @@ function renderMain(){
   // buttons
   const box = $("answers");
   box.classList.toggle("ro", ro);
-  const myUsual = !me && S.me ? weeklyOf(S.me, day) : null;
+  const myUsual = !me && S.me ? (weeklyOf(S.me, day) || {}).status || null : null;
   box.querySelectorAll(".ans").forEach(b => b.classList.toggle("sel", (!!me && me.status === b.dataset.s) || myUsual === b.dataset.s));
   const line = $("mineLine"); line.replaceChildren();
   if (me){
@@ -1737,7 +1769,7 @@ async function renderCal(){
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
   for (let d = 1; d <= days; d++){
     const key = `${ym}-${String(d).padStart(2, "0")}`;
-    for (const id in S.members) if (!answered.has(key + "_" + id) && weeklyOf(id, key) === "masu") cnt[key] = (cnt[key] || 0) + 1;
+    for (const id in S.members) if (!answered.has(key + "_" + id) && (weeklyOf(id, key) || {}).status === "masu") cnt[key] = (cnt[key] || 0) + 1;
   }
   const cells = DOW.map((d, i) => h("div", { class:"dow" + (i === 0 ? " sun" : i === 6 ? " sat" : ""), text:d }));
   for (let i = 0; i < first; i++) cells.push(h("div", { class:"d pad" }));
@@ -1788,7 +1820,7 @@ function showSetTab(t){
 $("setTabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) showSetTab(b.dataset.t); });
 showSetTab("me");
 $("setBtn").addEventListener("click", () => {
- gPicker.set(S.group); updateRuleSave(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
+ gPicker.set(S.group); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("anonBtn").addEventListener("click", () => {
   S.anon = !S.anon;
@@ -1858,19 +1890,13 @@ async function saveName(name){
   await saveMember({ name });
   ls.set("name", name);
 }
-let weeklyTimer = null;
-function saveWeekly(i, v){
-  const mid = S.me || S.uid, prev = S.members[mid]; if (!prev) return;
-  const w = { ...(prev.weekly || {}) };
-  if (v) w[String(i)] = v; else delete w[String(i)];
-  S.members = { ...S.members, [mid]: { ...prev, weekly:w } }; render();
-  // a few taps in a row become one save
-  clearTimeout(weeklyTimer);
-  weeklyTimer = setTimeout(async () => {
-    try { await saveMember({ weekly:S.members[mid].weekly }); toast("保存しました"); }
-    catch (err){ onWriteError(err); }
-  }, 700);
-}
+$("weeklySave").addEventListener("click", async () => {
+  if (!wkDraft) return;
+  const w = cleanWeekly(wkDraft);
+  $("weeklySave").disabled = true;
+  try { await saveMember({ weekly:w }); wkDraft = JSON.parse(JSON.stringify(w)); render(); toast("いつもの返事を保存しました"); }
+  catch (err){ onWriteError(err); renderWeeklyPick(); }
+});
 async function saveShape(k){
   const mid = S.me || S.uid, prev = S.members[mid]; if (!prev || (prev.shape || "circle") === k) return;
   S.members = { ...S.members, [mid]: { ...prev, shape:k } }; render();
