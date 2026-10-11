@@ -866,9 +866,12 @@ function cleanAnswer(d){
     from:num(d.from), until:num(d.until), game:str(d.game,24), conds:Array.isArray(d.conds) ? d.conds.map(c => TAG_RENAMES[c] || c).filter(c => (d.status === "sen" ? SEN_TAGS : CONDS).includes(c)).slice(0, 16) : [], comment:str(d.comment,40), cutoff:num(d.cutoff), updatedAt:num(d.updatedAt)||0 };
 }
 function cleanRule(d){
-  const rule = ["count","ratio","open"].includes(d && d.rule) ? d.rule : "count";
-  return { rule, quorum:clamp(d && d.quorum, 1, 20, 4), ratio:RATIOS[d && d.ratio] ? d.ratio : "half", minOpen:clamp(d && d.minOpen, 1, 20, 2) };
+  const rule = ["count","minus","ratio","open"].includes(d && d.rule) ? d.rule : "count";
+  return { rule, quorum:clamp(d && d.quorum, 1, 20, 4), minus:clamp(d && d.minus, 0, 19, 1),
+    ratio:RATIOS[d && d.ratio] ? d.ratio : "half", minOpen:clamp(d && d.minOpen, 1, 20, 2) };
 }
+// "メンバー数に合わせる": everyone minus a few, never below one
+const minusNeed = (minus, n) => Math.max(1, n - minus);
 function linkFor(gid){ return SHARE_BASE + "#" + gid; }
 function newId(prefix){ const a = new Uint8Array(8); crypto.getRandomValues(a); return prefix + Array.from(a, b => (b % 36).toString(36)).join(""); }
 
@@ -1071,12 +1074,17 @@ function rememberGroup(id, name){
 // ---------- rules ----------
 function ruleText(r, n){
   if (r.rule === "count") return `${r.quorum}人そろったら開催`;
+  if (r.rule === "minus"){
+    if (!n || n < 2) return r.minus === 0 ? "メンバー全員そろったら開催" : `メンバー数より${r.minus}人少なくても開催`;
+    return r.minus === 0 ? `全員(${n}人)そろったら開催` : `${n}人中${minusNeed(r.minus, n)}人で開催`;
+  }
   if (r.rule === "ratio") return `メンバーの${RATIOS[r.ratio].label}で開催` + (n ? `(${n}人中${Math.max(1, RATIOS[r.ratio].need(n))}人)` : "");
   return `集まった人でやる(${r.minOpen}人から)`;
 }
 function needFor(day, ovs = S.overrides){
   const n = Object.keys(S.members).length, g = S.group;
   if (ovs[day]) return { need:ovs[day], open:true, override:true, tag:`この日だけ${ovs[day]}人でやる` };
+  if (g.rule === "minus"){ const need = minusNeed(g.minus, n); return { need, tag:`${n}人中${need}人で開催` }; }
   if (g.rule === "ratio"){ const need = Math.max(1, RATIOS[g.ratio].need(n)); return { need, tag:`${n}人中${need}人で開催` }; }
   if (g.rule === "open") return { need:g.minOpen, open:true, tag:`集まった人でやる・${g.minOpen}人から` };
   return { need:g.quorum, tag:`${g.quorum}人そろったら開催` };
@@ -1167,21 +1175,32 @@ function rulePicker(root, memberCount, onChange){
   const changed = () => { if (onChange) onChange(); };
   const draw = () => {
     const seg = h("div", { class:"seg", role:"radiogroup" },
-      [["count","人数を\n決める"],["ratio","何人中\n何人"],["open","集まった\n人でやる"]].map(([k, l]) =>
+      [["count","人数を\n決める"],["minus","メンバー数に\n合わせる"],["open","集まった\n人でやる"]].map(([k, l]) =>
         h("button", { type:"button", role:"radio", "aria-checked":String(st.rule === k), class: st.rule === k ? "on" : "", onclick:() => { st.rule = k; draw(); changed(); } },
           ...l.split("\n").flatMap((p, i) => i ? [h("br"), p] : [p]))));
     let detail;
     if (st.rule === "count") detail = stepper(() => st.quorum, v => { st.quorum = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, 20, "人そろったら開催");
-    else if (st.rule === "ratio") detail = h("div", { class:"chips" }, Object.keys(RATIOS).map(k =>
-      h("button", { type:"button", class:"chip" + (st.ratio === k ? " on" : ""), onclick:() => { st.ratio = k; draw(); changed(); } }, RATIOS[k].label)));
+    else if (st.rule === "minus") detail = stepper(() => st.minus, v => { st.minus = v; hint.textContent = minusHint(); changed(); }, 0, 19, "人少なくても開催");
     else detail = stepper(() => st.minOpen, v => { st.minOpen = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, 20, "人いればやる");
-    const hint = h("p", { class:"rule-hint", text:ruleText(st, memberCount()) });
-    const extra = st.rule === "ratio" ? h("p", { class:"rule-hint", text:"メンバーが増えたら、必要な人数も自動で増えます。" })
+    const minusHint = () => {
+      const n = memberCount();
+      if (n < 2) return st.minus === 0 ? "メンバー全員そろったら開催します" : `メンバーが集まったら、その人数より${st.minus}人少なくても開催します`;
+      return st.minus === 0 ? `いまのメンバー${n}人なら、全員そろったら開催` : `いまのメンバー${n}人なら、${minusNeed(st.minus, n)}人で開催`;
+    };
+    const hint = h("p", { class:"rule-hint", text: st.rule === "minus" ? minusHint() : ruleText(st, memberCount()) });
+    const extra = st.rule === "minus" ? h("p", { class:"rule-hint", text:"メンバーが増えたら、開催の人数も自動で増えます。" })
       : st.rule === "open" ? h("p", { class:"rule-hint", text:"何人そろうかより、集まった人で遊ぶグループ向け。" }) : null;
     root.replaceChildren(...[seg, detail, hint, extra].filter(Boolean));
   };
   draw();
-  return { get:() => ({ rule:st.rule, quorum:st.quorum, ratio:st.ratio, minOpen:st.minOpen }), set(v){ st = cleanRule(v); draw(); } };
+  return {
+    get:() => ({ rule:st.rule, quorum:st.quorum, minus:st.minus, ratio:st.ratio, minOpen:st.minOpen }),
+    set(v){
+      st = cleanRule(v);
+      // an old "何人中何人" group opens as the matching "◯人少なくても開催"
+      if (st.rule === "ratio"){ const n = memberCount(); st.minus = Math.max(0, n - Math.max(1, RATIOS[st.ratio].need(n))); st.rule = "minus"; }
+      draw();
+    } };
 }
 
 // ---------- actions ----------
@@ -1851,7 +1870,7 @@ $("gNameForm").addEventListener("submit", async e => {
 // the save button lights up only when the picked rule differs from the saved one
 function ruleChanged(){
   const r = gPicker.get(), g = S.group;
-  return !!g && !(r.rule === g.rule && r.quorum === g.quorum && r.ratio === g.ratio && r.minOpen === g.minOpen);
+  return !!g && !(r.rule === g.rule && r.quorum === g.quorum && r.minus === g.minus && r.ratio === g.ratio && r.minOpen === g.minOpen);
 }
 function updateRuleSave(){ $("ruleSave").disabled = !ruleChanged(); }
 $("ruleSave").addEventListener("click", async () => {

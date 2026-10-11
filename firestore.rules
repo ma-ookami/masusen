@@ -69,10 +69,11 @@ service cloud.firestore {
 
     // ---------- shapes ----------
     function validGroup(d) {
-      return d.keys().hasOnly(['name', 'rule', 'quorum', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan'])
+      return d.keys().hasOnly(['name', 'rule', 'quorum', 'minus', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan'])
         && isText(d.name, 1, 24)
-        && d.get('rule', 'count') in ['count', 'ratio', 'open']
+        && d.get('rule', 'count') in ['count', 'minus', 'ratio', 'open']
         && intIn(d.get('quorum', 4), 1, 20)
+        && intIn(d.get('minus', 1), 0, 19)
         && d.get('ratio', 'half') in ['half', '2of3', '3of4', 'all']
         && intIn(d.get('minOpen', 2), 1, 20)
         && d.get('showPlan', true) is bool;
