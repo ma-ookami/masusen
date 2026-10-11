@@ -2314,10 +2314,10 @@ const MASCOT_ZZZ = `<g class="zzz" fill="var(--muted)" font-family="var(--f-body
   <text x="25" y="8" font-size="5">z</text><text x="25" y="8" font-size="6.5">z</text><text x="25" y="8" font-size="8">z</text></g>`;
 function lcdMascot(head){
   const G = "#ffd54a", st = `fill="none" stroke="${G}" stroke-width="1.6" stroke-linecap="square"`;
-  // the antenna one has eyelashes (open eyes: up and out; closed eyes: down and out)
+  // the antenna one has one eyelash per eye, at the lower outer corner
   const lash = head === "antenna", ls = `fill="none" stroke="${G}" stroke-width="1" stroke-linecap="round"`;
-  const lashOpen = lash ? `<path d="M10.2 10.4 L8.6 9.2 M21.8 10.4 L23.4 9.2" ${ls}/>` : "";
-  const lashUp = lash ? `<path d="M9.8 12.8 L8.3 12 M22.2 12.8 L23.7 12" ${ls}/>` : "";
+  const lashOpen = lash ? `<path d="M10.2 13.6 L8.6 14.8 M21.8 13.6 L23.4 14.8" ${ls}/>` : "";
+  const lashUp = lash ? `<path d="M9.7 13.2 L8.4 14.3 M22.3 13.2 L23.6 14.3" ${ls}/>` : "";
   const lashDown = lash ? `<path d="M10.2 12.8 L9 14.2 M21.8 12.8 L23 14.2" ${ls}/>` : "";
   const eyes = `<g class="eyes"><rect x="10" y="10" width="3" height="4" fill="${G}"/><rect x="19" y="10" width="3" height="4" fill="${G}"/>${lashOpen}</g>`;
   const led = c => `<circle cx="26" cy="23.2" r=".9" fill="${c}"/>`;
