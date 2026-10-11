@@ -129,7 +129,7 @@ button{cursor:pointer}
 @keyframes mYawn{0%,100%{transform:none}30%,70%{transform:scale(1.04,1.08)}}
 @keyframes mTilt{0%,100%{transform:none}20%,75%{transform:rotate(14deg)}}
 @keyframes mTilt2{0%,100%{transform:none}20%,75%{transform:rotate(-14deg)}}
-@keyframes mNod{0%,100%{transform:none}20%,60%{transform:translateY(2px) scale(1.03,.95)}40%,80%{transform:translateY(-1px)}}
+@keyframes mNod{0%,100%{transform:none}35%{transform:translateY(1.5px) scale(1.02,.96)}}
 @keyframes mBlink{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.1)}}
 @keyframes mHop{0%{transform:none}20%{transform:scale(1.12,.86)}50%{transform:translateY(-6px) scale(.94,1.08)}80%{transform:scale(1.05,.95)}100%{transform:none}}
 @keyframes mWig{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
@@ -2317,7 +2317,7 @@ function lcdMascot(head){
   const eyes = `<g class="eyes"><rect x="10" y="10" width="3" height="4" fill="${G}"/><rect x="19" y="10" width="3" height="4" fill="${G}"/></g>`;
   const led = c => `<circle cx="26" cy="23.2" r=".9" fill="${c}"/>`;
   const faces = {
-    normal: eyes + `<path d="M12 17 H20" ${st}/>` + led("#4caf50"),
+    normal: eyes + `<path d="M11.5 16.3 Q16 20 20.5 16.3" fill="none" stroke="${G}" stroke-width="1.6" stroke-linecap="round"/>` + led("#4caf50"),
     happy: `<path d="M9.5 13 L11.5 10.5 L13.5 13" ${st}/><path d="M18.5 13 L20.5 10.5 L22.5 13" ${st}/><path d="M11.5 16 L16 18.5 L20.5 16" ${st}/>` + led("#4caf50"),
     sad: eyes + `<path d="M11.5 18.5 L16 16.5 L20.5 18.5" ${st}/>` + led("#4caf50"),
     sleep: `<g opacity=".55"><path d="M10 12.5 H13" ${st}/><path d="M19 12.5 H22" ${st}/><path d="M15 17 H17" ${st}/></g>` + led("#e66"),
@@ -2349,11 +2349,11 @@ function mascotIdleMove(el){
   const hp = el.id === "mascot2";
   return r < .35 ? "blink" : r < .55 ? "look" : r < .7 ? "hop" : r < .8 ? "wiggle" : r < .9 ? "glitch" : hp ? "groove" : "glitch";
 }
-// when I answer: ます = jump with a grin, たぶんます = tilt, せん = a cheerful nod (never a sad face)
+// when I answer: ます = jump with a grin, たぶんます = tilt, せん = just a small nod (neither sad nor pleased)
 function mascotReact(status){
   const move = { masu:"hop", tabun:"tilt", sen:"nod" }[status];
   if (!move) return;
-  mascots().forEach((el, i) => setTimeout(() => mascotDo(el, move, status !== "tabun"), i * 130));
+  mascots().forEach((el, i) => setTimeout(() => mascotDo(el, move, status === "masu"), i * 130));
 }
 mascots().forEach(el => {
   el.addEventListener("click", () => { try { navigator.vibrate && navigator.vibrate(10); } catch {} mascotDo(el, el.classList.contains("sleep") ? "wiggle" : "hop"); });
