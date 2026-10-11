@@ -354,7 +354,8 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .wk.masu{background:var(--masu);border-color:var(--masu)} .wk.masu .wk-v,.wk.masu .wk-d{color:var(--masu-ink)}
 .wk.tabun{background:var(--tabun);border-color:var(--tabun)} .wk.tabun .wk-v,.wk.tabun .wk-d{color:var(--tabun-ink)}
 .wk.sen{background:var(--sen);border-color:var(--sen)} .wk.sen .wk-v,.wk.sen .wk-d{color:var(--sen-ink)}
-.mem .nm em.usual{background:transparent;border:1px dashed var(--line)}
+.mem .nm .usual{flex:none;font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.st.usual-st{opacity:.72}
 .shape-opt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 10px 6px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-size:12px;font-weight:700;color:var(--muted)}
 .shape-opt .av{width:34px;height:34px;font-size:15px}
 .shape-opt.on{border-color:var(--fg);color:var(--fg)}
@@ -894,7 +895,7 @@ const str = (v, n) => typeof v === "string" ? v.slice(0, n) : "";
 const num = v => typeof v === "number" && isFinite(v) ? v : null;
 const clamp = (v, lo, hi, d) => { const n = num(v); return n == null ? d : Math.max(lo, Math.min(hi, Math.round(n))); };
 function cleanAnswer(d){
-  if (!d || !STATUSES[d.status] || typeof d.day !== "string") return null;
+  if (!d || !(STATUSES[d.status] || d.status === "none") || typeof d.day !== "string") return null;
   return { uid:str(d.uid,200), day:str(d.day,10), month:str(d.month,7) || str(d.day,7), status:d.status,
     from:num(d.from), until:num(d.until), game:str(d.game,24), conds:Array.isArray(d.conds) ? d.conds.map(c => TAG_RENAMES[c] || c).filter(c => (d.status === "sen" ? SEN_TAGS : CONDS).includes(c)).slice(0, 16) : [], comment:str(d.comment,40), cutoff:num(d.cutoff), updatedAt:num(d.updatedAt)||0 };
 }
@@ -1058,7 +1059,7 @@ function subscribeAnswers(){
 // Remember when each person's answer for today was last seen; on the next visit, say how many changed.
 function noteChanges(gid){
   const today = {};
-  Object.values(S.answers).forEach(a => { if (a.day === S.day && a.uid !== S.me) today[a.uid] = a.updatedAt || 0; });
+  Object.values(S.answers).forEach(a => { if (a.day === S.day && a.uid !== S.me && a.status !== "none") today[a.uid] = a.updatedAt || 0; });
   const prev = ls.get("seen." + gid, null);
   if (S.diffPending && S.me){
     S.diffPending = false;
@@ -1147,9 +1148,11 @@ function weeklyOf(id, day){
 }
 function answersFor(day){
   const out = {};
-  for (const k in S.answers){ const a = S.answers[k]; if (a.day === day && S.members[a.uid]) out[a.uid] = a; }
+  const cleared = new Set();      // explicitly "no answer" for this day: no weekly default either
+  for (const k in S.answers){ const a = S.answers[k]; if (a.day !== day || !S.members[a.uid]) continue;
+    if (a.status === "none") cleared.add(a.uid); else out[a.uid] = a; }
   for (const id in S.members){
-    if (out[id]) continue;
+    if (out[id] || cleared.has(id)) continue;
     const u = weeklyOf(id, day);
     if (u) out[id] = { uid:id, day, status:u.status, from:null, until:null, cutoff:null, game:"", conds:[...u.conds], comment:"", updatedAt:0, usual:true };
   }
@@ -1159,7 +1162,9 @@ const isMasu = a => !!a && a.status === "masu";
 const isTabun = a => !!a && a.status === "tabun";
 function masuCount(day){ const ad = answersFor(day); return Object.values(ad).filter(isMasu).length; }
 const myKey = day => day + "_" + S.me;
-const mineOn = day => S.answers[myKey(day)] || null;
+// my real answer for the day ("none" = I cleared it), and the one that counts as an answer
+const rawMine = day => S.answers[myKey(day)] || null;
+const mineOn = day => { const a = rawMine(day); return a && a.status !== "none" ? a : null; };
 function detailText(a){
   if (!a) return "";
   return [timeText(a), cutText(a), (a.conds || []).join("・"), a.game ? "🎮 " + a.game : "", a.comment ? "「" + a.comment + "」" : ""].filter(Boolean).join(" ・ ");
@@ -1318,6 +1323,7 @@ function buildAnswer(day, patch){
   const next = { ...cur, ...patch, uid:S.me, day, month:day.slice(0, 7), updatedAt:Date.now() };
   if (patch.status && (patch.status === "sen") !== (cur.status === "sen")) next.conds = [];
   if (next.status === "sen"){ next.from = null; next.until = null; next.game = ""; next.cutoff = null; }
+  if (next.status === "none"){ next.from = null; next.until = null; next.game = ""; next.cutoff = null; next.conds = []; next.comment = ""; }
   return next;
 }
 function saveMine(patch, day = S.sel){
@@ -1550,7 +1556,7 @@ function renderMain(){
   // buttons
   const box = $("answers");
   box.classList.toggle("ro", ro);
-  const myUsual = !me && S.me ? (weeklyOf(S.me, day) || {}).status || null : null;
+  const myUsual = !rawMine(day) && S.me ? (weeklyOf(S.me, day) || {}).status || null : null;
   box.querySelectorAll(".ans").forEach(b => b.classList.toggle("sel", (!!me && me.status === b.dataset.s) || myUsual === b.dataset.s));
   const line = $("mineLine"); line.replaceChildren();
   if (me){
@@ -1572,9 +1578,9 @@ function renderMain(){
     const meta = metaNodes(a, false, S.anon);
     const shown = S.anon ? `メンバー${i + 1}` : m.name;
     return h("li", { class: "mem " + st },
-      h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null, a && a.usual ? h("em", { class:"usual", text:"いつもの" }) : null),
+      h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null, a && a.usual ? h("span", { class:"usual", title:"毎週この曜日のいつもの返事", text:"🔁 毎週" }) : null),
       h("span", { class:"ago", text: a && !a.usual ? agoText(a.updatedAt) : "" }),
-      a ? h("span", { class:"st " + st, text:`${STATUSES[st].ic} ${STATUSES[st].label}` }) : h("span"),
+      a ? h("span", { class:"st " + st + (a.usual ? " usual-st" : ""), text:`${STATUSES[st].ic} ${STATUSES[st].label}` }) : h("span"),
       meta.length ? h("div", { class:"meta" }, meta) : null);
   }));
   $("answeredN").textContent = `${sorted.filter(id => today[id]).length} / ${sorted.length}人が返事`;
@@ -2138,8 +2144,15 @@ $("planToggle").addEventListener("change", async e => {
 $("answers").addEventListener("click", e => {
   const b = e.target.closest(".ans"); if (!b) return;
   if (S.canWrite === false) return;
-  const s = b.dataset.s, me = mineOn(S.sel);
-  if (me && me.status === s){ clearMine(); return; }
+  const s = b.dataset.s, me = mineOn(S.sel), raw = rawMine(S.sel);
+  const usual = S.me ? (weeklyOf(S.me, S.sel) || {}).status || null : null;
+  // tapping what's already selected clears it; on a weekly-default day, "cleared" has to be remembered
+  const selected = me ? me.status : (!raw && usual) || null;
+  if (selected === s){
+    if (usual){ saveMine({ status:"none" }); toast("この日は返事なしにしました"); }
+    else clearMine();
+    return;
+  }
   burst(b, e);
   saveMine({ status:s });
 });

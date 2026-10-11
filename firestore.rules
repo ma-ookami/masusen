@@ -104,7 +104,7 @@ service cloud.firestore {
         && isText(d.uid, 1, 128)
         && isDay(d.day)
         && d.month == d.day.split('-')[0] + '-' + d.day.split('-')[1]
-        && d.status in ['masu', 'tabun', 'sen']
+        && d.status in ['masu', 'tabun', 'sen', 'none']
         && optIntIn(d.get('from', null), 0, 30)
         && optIntIn(d.get('until', null), 0, 30)
         && optIntIn(d.get('cutoff', null), 0, 30)
