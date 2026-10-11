@@ -98,6 +98,11 @@ button{cursor:pointer}
 .mascot.sad .earL{transform:rotate(-30deg)} .mascot.sad .earR{transform:rotate(30deg)}
 .mascot.sleep .earL{transform:rotate(-14deg)} .mascot.sleep .earR{transform:rotate(14deg)}
 .mascot.twitch .earL{animation:mTwL .7s ease} .mascot.twitch .earR{animation:mTwR .7s ease .1s}
+.mascot .tail{transform-box:view-box;transform-origin:28px 27px;transition:transform .4s cubic-bezier(.3,1.4,.5,1)}
+.mascot.sad .tail,.mascot.sleep .tail{transform:rotate(55deg)}
+.mascot.twitch .tail,.mascot.happy .tail{animation:mTail .7s ease-in-out}
+.mascot.happy .tail{animation-iteration-count:infinite;animation-duration:1.4s}
+@keyframes mTail{0%,100%{transform:none}50%{transform:rotate(-14deg)}}
 @keyframes mTwL{0%,100%{transform:none}20%,50%{transform:rotate(-16deg)}35%{transform:none}}
 @keyframes mTwR{0%,100%{transform:none}20%,50%{transform:rotate(16deg)}35%{transform:none}}
 .mascot .bulb{fill:#ff6b5a;transition:fill .3s}
@@ -2309,7 +2314,8 @@ $("calNext").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMont
 // LCD: a yellow frame with a dark screen; the face glows. head: "antenna" or "signal"
 const MASCOT_HEADS = {
   antenna: `<g class="ant"><rect x="15.2" y="0.8" width="1.6" height="4.5" fill="var(--masu-deep)"/><circle class="bulb" cx="16" cy="1.3" r="1.9"/></g>`,
-  cat: `<g class="ear earL"><path d="M3.5 9 L5.5 0.8 L12.5 5.5 Z" fill="var(--masu)"/><path d="M5.6 6.5 L6.6 3 L9.6 5.2 Z" fill="#ff8a7a"/></g>
+  cat: `<path class="tail" d="M28 27 Q34.5 27 34 20 Q33.8 16.5 31.5 16" fill="none" stroke="var(--masu-deep)" stroke-width="2.4" stroke-linecap="round"/>
+    <g class="ear earL"><path d="M3.5 9 L5.5 0.8 L12.5 5.5 Z" fill="var(--masu)"/><path d="M5.6 6.5 L6.6 3 L9.6 5.2 Z" fill="#ff8a7a"/></g>
     <g class="ear earR"><path d="M28.5 9 L26.5 0.8 L19.5 5.5 Z" fill="var(--masu)"/><path d="M26.4 6.5 L25.4 3 L22.4 5.2 Z" fill="#ff8a7a"/></g>`,
   headphones: `<g class="ant antL"><path d="M10.5 7 L7.5 -1.5" stroke="var(--masu-deep)" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="7.3" cy="-2" r="1.6"/></g>
     <g class="ant antR"><path d="M21.5 7 L24.5 -1.5" stroke="var(--masu-deep)" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="24.7" cy="-2" r="1.6"/></g>`,
@@ -2325,9 +2331,9 @@ const MASCOT_ZZZ = `<g class="zzz" fill="var(--muted)" font-family="var(--f-body
   <text x="25" y="8" font-size="5">z</text><text x="25" y="8" font-size="6.5">z</text><text x="25" y="8" font-size="8">z</text></g>`;
 // each one's face: eye shape, mouth, cheeks, screen colours
 const MASCOT_LOOK = {
-  antenna:    { eye:"round", mouth:"soft", cheeks:true },
+  antenna:    { eye:"square", mouth:"soft", glow:"#ff7a6b", screen:"#2a1517" },
   headphones: { eye:"square", mouth:"wide" },
-  cat:        { eye:"square", mouth:"cat", cheeks:true, glow:"#7dffa0", screen:"#0f2a1c" },
+  cat:        { eye:"round", mouth:"cat", cheeks:true, glow:"#7dffa0", screen:"#0f2a1c" },
 };
 function lcdMascot(head){
   const L = MASCOT_LOOK[head], G = L.glow || "#ffd54a";
