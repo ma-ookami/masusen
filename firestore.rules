@@ -1,0 +1,178 @@
+rules_version = '2';
+
+// ますせん のデータを守るルール。
+// - グループは「IDを知っている人(匿名ログイン済み)」だけが1件ずつ読める。一覧での取り出しは禁止
+// - メンバーの一覧は参加画面に必要なので、グループIDを知っている人が読める
+// - 返事・今日やること・その日だけの人数は、メンバーだけが読める
+// - 返事・名前は本人だけが書ける
+//   (別のスマホやブラウザからは、links/<そのブラウザのID> で「前に参加した人」として入れる。
+//    合言葉を設定しているメンバーに入るには、合言葉が必要)
+// - グループ名・開催ルール・その日だけの人数・今日やることはメンバーなら誰でも変えられる
+// - メンバーを外す・グループを削除するのは、グループを作った端末(ブラウザ)だけ
+// - 参加中グループの一覧(users/<uid>)は本人だけ
+// - 保存できる項目と長さは、アプリが使うものだけに制限する
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function groupPath(gid) { return /databases/$(database)/documents/groups/$(gid); }
+    function memberPath(gid, mid) { return /databases/$(database)/documents/groups/$(gid)/members/$(mid); }
+    function pinPath(gid, mid) { return /databases/$(database)/documents/groups/$(gid)/pins/$(mid); }
+    function linkPath(gid) { return /databases/$(database)/documents/groups/$(gid)/links/$(request.auth.uid); }
+    function hasLink(gid) { return exists(linkPath(gid)); }
+    // this browser acts as member <mid>: it joined as that member, or linked itself to it
+    function actsAs(gid, mid) {
+      return signedIn() && (mid == request.auth.uid || (hasLink(gid) && get(linkPath(gid)).data.mid == mid));
+    }
+    function isMember(gid) {
+      return signedIn() && (exists(memberPath(gid, request.auth.uid)) || hasLink(gid));
+    }
+    // only the browser that created the group (a linked browser is not enough)
+    function isCreator(gid) {
+      return signedIn() && get(groupPath(gid)).data.get('createdBy', '') == request.auth.uid;
+    }
+    function isText(v, min, max) { return v is string && v.size() >= min && v.size() <= max; }
+    function intIn(v, lo, hi) { return v is int && v >= lo && v <= hi; }
+    function optIntIn(v, lo, hi) { return v == null || intIn(v, lo, hi); }
+    function isDay(v) { return v is string && v.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'); }
+    // claiming a member with a passcode: sha256("<gid>:<mid>:<pin>") must match the stored hash
+    function pinOk(gid, mid, d) {
+      return !exists(pinPath(gid, mid))
+        || (d.get('pin', '') is string && d.get('pin', '').matches('^[0-9]{4}$')
+            && hashing.sha256((gid + ':' + mid + ':' + d.get('pin', '')).toUtf8()).toHexString().lower()
+               == get(pinPath(gid, mid)).data.hash);
+    }
+
+    // every tag the app offers (ます/たぶんます の条件 と せん の理由)
+    function knownTags() {
+      return ['眠くなければ', '元気があれば', 'ご飯のあと', '用事が済んだら', '家族が寝たら',
+              '遅れるかも', '途中から参加', '途中抜けあり', '少しだけ', '聞き専',
+              '眠い', '疲れた', '体調いまいち', '気分じゃない',
+              '仕事', '忙しい', '予定あり', '用事あり', '外出中', '明日朝早い',
+              '明日なら', '別のことする', 'また今度!'];
+    }
+
+    // ---------- shapes ----------
+    function validGroup(d) {
+      return d.keys().hasOnly(['name', 'rule', 'quorum', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan'])
+        && isText(d.name, 1, 24)
+        && d.get('rule', 'count') in ['count', 'ratio', 'open']
+        && intIn(d.get('quorum', 4), 1, 20)
+        && d.get('ratio', 'half') in ['half', '2of3', '3of4', 'all']
+        && intIn(d.get('minOpen', 2), 1, 20)
+        && d.get('showPlan', true) is bool;
+    }
+    function validMember(d) {
+      return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape'])
+        && isText(d.name, 1, 16)
+        && d.joinedAt is int
+        && (!('color' in d) || intIn(d.color, 0, 12))
+        && d.get('hasPin', false) is bool
+        && d.get('shape', 'circle') in ['circle', 'squircle', 'badge', 'flower', 'hexagon'];
+    }
+    function validAnswer(d) {
+      return d.keys().hasOnly(['uid', 'day', 'month', 'status', 'from', 'until', 'game', 'conds', 'comment', 'cutoff', 'updatedAt'])
+        && isText(d.uid, 1, 128)
+        && isDay(d.day)
+        && d.month == d.day.split('-')[0] + '-' + d.day.split('-')[1]
+        && d.status in ['masu', 'tabun', 'sen']
+        && optIntIn(d.get('from', null), 0, 30)
+        && optIntIn(d.get('until', null), 0, 30)
+        && optIntIn(d.get('cutoff', null), 0, 30)
+        && (!('game' in d) || isText(d.game, 0, 24))
+        && (!('comment' in d) || isText(d.comment, 0, 40))
+        && (!('conds' in d) || (d.conds is list && d.conds.size() <= 16 && d.conds.hasOnly(knownTags())))
+        && d.updatedAt is int;
+    }
+
+    match /groups/{gid} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && validGroup(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdAt is int;
+      allow update: if isMember(gid) && validGroup(request.resource.data)
+        && request.resource.data.get('createdBy', '') == resource.data.get('createdBy', '')
+        && request.resource.data.get('createdAt', 0) == resource.data.get('createdAt', 0);
+      allow delete: if signedIn() && resource.data.get('createdBy', '') == request.auth.uid;
+
+      match /members/{mid} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.auth.uid == mid
+          && exists(groupPath(gid))
+          && validMember(request.resource.data);
+        allow update: if actsAs(gid, mid) && validMember(request.resource.data);
+        allow delete: if actsAs(gid, mid) || isCreator(gid);
+      }
+
+      // passcode hashes: never readable by anyone, only checked by these rules
+      match /pins/{mid} {
+        allow read: if false;
+        allow create, update: if actsAs(gid, mid)
+          && request.resource.data.keys().hasOnly(['hash'])
+          && request.resource.data.hash is string
+          && request.resource.data.hash.matches('^[0-9a-f]{64}$');
+        allow delete: if actsAs(gid, mid) || isCreator(gid);
+      }
+
+      match /links/{lid} {
+        allow get: if signedIn() && lid == request.auth.uid;
+        allow list: if isCreator(gid);
+        // linking (or switching) to a member needs that member's passcode, if they set one
+        allow create: if signedIn() && lid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['mid', 'at', 'pin'])
+          && isText(request.resource.data.mid, 1, 128)
+          && request.resource.data.at is int
+          && exists(memberPath(gid, request.resource.data.mid))
+          && pinOk(gid, request.resource.data.mid, request.resource.data);
+        allow update: if signedIn() && lid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['mid', 'at', 'pin'])
+          && isText(request.resource.data.mid, 1, 128)
+          && request.resource.data.at is int
+          && exists(memberPath(gid, request.resource.data.mid))
+          && (request.resource.data.mid == resource.data.mid || pinOk(gid, request.resource.data.mid, request.resource.data));
+        allow delete: if (signedIn() && lid == request.auth.uid) || isCreator(gid);
+      }
+
+      match /answers/{aid} {
+        allow read: if isMember(gid);
+        allow create, update: if isMember(gid)
+          && validAnswer(request.resource.data)
+          && actsAs(gid, request.resource.data.uid)
+          && aid == request.resource.data.day + '_' + request.resource.data.uid;
+        allow delete: if actsAs(gid, resource.data.uid) || isCreator(gid);
+      }
+
+      match /overrides/{day} {
+        allow read: if isMember(gid);
+        allow create, update: if isMember(gid)
+          && request.resource.data.keys().hasOnly(['need', 'day', 'by', 'at'])
+          && intIn(request.resource.data.need, 1, 20)
+          && request.resource.data.day == day && isDay(day)
+          && actsAs(gid, request.resource.data.by)
+          && request.resource.data.at is int;
+        allow delete: if isMember(gid) || isCreator(gid);
+      }
+
+      match /plans/{day} {
+        allow read: if isMember(gid);
+        allow create, update: if isMember(gid)
+          && request.resource.data.keys().hasOnly(['text', 'day', 'by', 'at'])
+          && isText(request.resource.data.text, 1, 30)
+          && request.resource.data.day == day && isDay(day)
+          && actsAs(gid, request.resource.data.by)
+          && request.resource.data.at is int;
+        allow delete: if isMember(gid) || isCreator(gid);
+      }
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['groups'])
+        && request.resource.data.groups is list
+        && request.resource.data.groups.size() <= 30;
+    }
+  }
+}

@@ -156,6 +156,10 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .switch-row input:checked::before{transform:translateX(20px);background:var(--masu-ink)}
 .seg.two button[data-s="tabun"].on{background:var(--tabun);color:var(--tabun-ink)}
 .rule-hint{font-size:13px;color:var(--muted);margin:0}
+.in-wrap{position:relative;display:block;flex:1;min-width:0}
+.in-wrap .input{padding-right:58px}
+.count{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:11px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.count.full{color:var(--coral)}
 
 /* one-screen fit (main screen only) */
 html,body{height:100%}
@@ -296,16 +300,25 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .mem .nm .nm-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:24px}
 .mem .nm em{flex:none;display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:999px;background:var(--surface);
   font-style:normal;font-size:11px;line-height:1;color:var(--muted);font-weight:700}
-.profile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px 16px;border-radius:16px;background:var(--surface-2);text-align:center}
-.profile .av{width:64px;height:64px;font-size:28px;box-shadow:0 0 0 3px var(--surface-2),0 0 0 5px color-mix(in srgb,hsl(var(--h) 55% 44%) 60%,transparent)}
-.profile .pf-name{font-size:18px;font-weight:800;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.profile .pf-sub{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.profile{display:flex;flex-direction:row;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--surface-2)}
+.profile .av{width:44px;height:44px;font-size:20px}
+.profile .pf-text{min-width:0;display:flex;flex-direction:column;gap:2px}
+.profile .pf-name{font-size:17px;font-weight:800;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile .pf-sub{font-size:12px;color:var(--muted);display:flex;gap:4px 8px;align-items:center;flex-wrap:wrap}
 .profile .pf-sub .lock{font-weight:700}
-.av{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;line-height:1;color:#fff;background:hsl(var(--h) 55% 44%)}
-.swatches{display:flex;flex-wrap:wrap;gap:8px}
-.swatch{width:34px;height:34px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:hsl(var(--h) 55% 44%);transition:transform .1s}
+.av{flex:none;width:24px;height:24px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:800;line-height:1;color:#fff;background:var(--avbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 16%,transparent)}
+.swatches{display:grid;grid-template-columns:repeat(7,34px);gap:8px}
+.swatch{width:34px;height:34px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;font-size:14px;font-weight:800;color:#fff;background:var(--avbg);box-shadow:inset 0 0 0 1px color-mix(in srgb,#fff 16%,transparent);transition:transform .1s}
 .swatch:active{transform:scale(.92)}
-.swatch.on{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--fg)}
+.av.shape-badge{border-radius:0;clip-path:polygon(100.0% 50.0%,99.6% 52.2%,98.6% 54.2%,97.1% 56.2%,95.5% 58.0%,94.3% 59.8%,93.5% 61.6%,93.2% 63.6%,93.5% 65.8%,93.9% 68.2%,94.2% 70.6%,94.1% 72.9%,93.3% 75.0%,91.9% 76.7%,89.9% 78.0%,87.7% 78.9%,85.4% 79.7%,83.4% 80.6%,81.8% 81.8%,80.6% 83.4%,79.7% 85.4%,78.9% 87.7%,78.0% 89.9%,76.7% 91.9%,75.0% 93.3%,72.9% 94.1%,70.6% 94.2%,68.2% 93.9%,65.8% 93.5%,63.6% 93.2%,61.6% 93.5%,59.8% 94.3%,58.0% 95.5%,56.2% 97.1%,54.2% 98.6%,52.2% 99.6%,50.0% 100.0%,47.8% 99.6%,45.8% 98.6%,43.8% 97.1%,42.0% 95.5%,40.2% 94.3%,38.4% 93.5%,36.4% 93.2%,34.2% 93.5%,31.8% 93.9%,29.4% 94.2%,27.1% 94.1%,25.0% 93.3%,23.3% 91.9%,22.0% 89.9%,21.1% 87.7%,20.3% 85.4%,19.4% 83.4%,18.2% 81.8%,16.6% 80.6%,14.6% 79.7%,12.3% 78.9%,10.1% 78.0%,8.1% 76.7%,6.7% 75.0%,5.9% 72.9%,5.8% 70.6%,6.1% 68.2%,6.5% 65.8%,6.8% 63.6%,6.5% 61.6%,5.7% 59.8%,4.5% 58.0%,2.9% 56.2%,1.4% 54.2%,0.4% 52.2%,0.0% 50.0%,0.4% 47.8%,1.4% 45.8%,2.9% 43.8%,4.5% 42.0%,5.7% 40.2%,6.5% 38.4%,6.8% 36.4%,6.5% 34.2%,6.1% 31.8%,5.8% 29.4%,5.9% 27.1%,6.7% 25.0%,8.1% 23.3%,10.1% 22.0%,12.3% 21.1%,14.6% 20.3%,16.6% 19.4%,18.2% 18.2%,19.4% 16.6%,20.3% 14.6%,21.1% 12.3%,22.0% 10.1%,23.3% 8.1%,25.0% 6.7%,27.1% 5.9%,29.4% 5.8%,31.8% 6.1%,34.2% 6.5%,36.4% 6.8%,38.4% 6.5%,40.2% 5.7%,42.0% 4.5%,43.8% 2.9%,45.8% 1.4%,47.8% 0.4%,50.0% 0.0%,52.2% 0.4%,54.2% 1.4%,56.2% 2.9%,58.0% 4.5%,59.8% 5.7%,61.6% 6.5%,63.6% 6.8%,65.8% 6.5%,68.2% 6.1%,70.6% 5.8%,72.9% 5.9%,75.0% 6.7%,76.7% 8.1%,78.0% 10.1%,78.9% 12.3%,79.7% 14.6%,80.6% 16.6%,81.8% 18.2%,83.4% 19.4%,85.4% 20.3%,87.7% 21.1%,89.9% 22.0%,91.9% 23.3%,93.3% 25.0%,94.1% 27.1%,94.2% 29.4%,93.9% 31.8%,93.5% 34.2%,93.2% 36.4%,93.5% 38.4%,94.3% 40.2%,95.5% 42.0%,97.1% 43.8%,98.6% 45.8%,99.6% 47.8%)}
+.av.shape-squircle{border-radius:28%}
+.av.shape-hexagon{border-radius:0;clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0% 50%)}
+.av.shape-flower{border-radius:0;clip-path:polygon(50.0% 0.0%,51.7% 0.1%,53.5% 0.3%,55.2% 0.6%,56.9% 1.1%,58.5% 1.8%,60.1% 2.5%,61.6% 3.4%,63.1% 4.4%,64.5% 5.5%,65.8% 6.7%,67.0% 8.0%,68.1% 9.3%,69.1% 10.8%,70.1% 12.2%,70.9% 13.8%,71.7% 15.3%,72.3% 16.9%,72.9% 18.4%,74.6% 18.5%,76.3% 18.7%,78.0% 18.9%,79.7% 19.2%,81.4% 19.7%,83.1% 20.2%,84.7% 20.9%,86.3% 21.6%,87.8% 22.5%,89.3% 23.5%,90.7% 24.6%,92.0% 25.7%,93.2% 27.0%,94.3% 28.4%,95.3% 29.8%,96.2% 31.3%,96.9% 32.9%,97.6% 34.5%,98.0% 36.2%,98.4% 37.9%,98.5% 39.7%,98.6% 41.4%,98.5% 43.2%,98.3% 44.9%,97.9% 46.7%,97.4% 48.3%,96.8% 50.0%,96.0% 51.6%,95.2% 53.2%,94.3% 54.7%,93.2% 56.1%,92.1% 57.4%,90.9% 58.7%,89.7% 59.9%,88.4% 61.0%,87.1% 62.1%,87.5% 63.7%,87.9% 65.3%,88.2% 67.0%,88.4% 68.7%,88.5% 70.5%,88.5% 72.2%,88.4% 74.0%,88.2% 75.8%,87.8% 77.5%,87.4% 79.2%,86.8% 80.9%,86.1% 82.5%,85.2% 84.0%,84.3% 85.5%,83.2% 86.9%,82.0% 88.2%,80.8% 89.4%,79.4% 90.5%,77.9% 91.4%,76.4% 92.3%,74.8% 93.0%,73.2% 93.6%,71.5% 94.0%,69.7% 94.3%,68.0% 94.5%,66.2% 94.6%,64.5% 94.5%,62.7% 94.3%,61.0% 94.0%,59.3% 93.5%,57.6% 93.0%,56.0% 92.3%,54.4% 91.6%,52.9% 90.8%,51.4% 89.9%,50.0% 89.0%,48.6% 89.9%,47.1% 90.8%,45.6% 91.6%,44.0% 92.3%,42.4% 93.0%,40.7% 93.5%,39.0% 94.0%,37.3% 94.3%,35.5% 94.5%,33.8% 94.6%,32.0% 94.5%,30.3% 94.3%,28.5% 94.0%,26.8% 93.6%,25.2% 93.0%,23.6% 92.3%,22.1% 91.4%,20.6% 90.5%,19.2% 89.4%,18.0% 88.2%,16.8% 86.9%,15.7% 85.5%,14.8% 84.0%,13.9% 82.5%,13.2% 80.9%,12.6% 79.2%,12.2% 77.5%,11.8% 75.8%,11.6% 74.0%,11.5% 72.3%,11.5% 70.5%,11.6% 68.7%,11.8% 67.0%,12.1% 65.3%,12.5% 63.7%,12.9% 62.1%,11.6% 61.0%,10.3% 59.9%,9.1% 58.7%,7.9% 57.4%,6.8% 56.1%,5.7% 54.7%,4.8% 53.2%,4.0% 51.6%,3.2% 50.0%,2.6% 48.3%,2.1% 46.7%,1.7% 44.9%,1.5% 43.2%,1.4% 41.4%,1.5% 39.7%,1.6% 37.9%,2.0% 36.2%,2.4% 34.5%,3.1% 32.9%,3.8% 31.3%,4.7% 29.8%,5.7% 28.4%,6.8% 27.0%,8.0% 25.7%,9.3% 24.6%,10.7% 23.5%,12.2% 22.5%,13.7% 21.6%,15.3% 20.9%,16.9% 20.2%,18.6% 19.7%,20.3% 19.2%,22.0% 18.9%,23.7% 18.7%,25.4% 18.5%,27.1% 18.4%,27.7% 16.9%,28.3% 15.3%,29.1% 13.8%,29.9% 12.2%,30.9% 10.8%,31.9% 9.3%,33.0% 8.0%,34.2% 6.7%,35.5% 5.5%,36.9% 4.4%,38.4% 3.4%,39.9% 2.5%,41.5% 1.8%,43.1% 1.1%,44.8% 0.6%,46.5% 0.3%,48.3% 0.1%)}
+.shapes{display:flex;flex-wrap:wrap;gap:10px}
+.shape-opt{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 10px 6px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-size:12px;font-weight:700;color:var(--muted)}
+.shape-opt .av{width:34px;height:34px;font-size:15px}
+.shape-opt.on{border-color:var(--fg);color:var(--fg)}
+.swatch.on{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--fg),inset 0 0 0 1px color-mix(in srgb,#fff 16%,transparent)}
 .by-line{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 0;font-weight:800;color:var(--fg)}
 .by-line .lbl{font-size:12px;color:var(--muted);font-weight:700}
 .chip.with-av{display:inline-flex;align-items:center;gap:6px;padding-left:6px}
@@ -405,7 +418,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .cal .dow{font-size:11px;color:var(--muted);font-weight:700}
 .cal .dow.sun{color:var(--sun)} .cal .dow.sat{color:var(--sat)}
 .cal .d{aspect-ratio:1;max-width:100%;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;background:var(--surface-2);line-height:1.1}
-.cal .d.x{background:transparent}
+.cal .d.pad{background:transparent}
 .cal .d small{font-size:10px;color:var(--muted)}
 .cal .d.held{background:var(--masu);color:var(--masu-ink)}
 .cal .d.held small{color:var(--masu-ink)}
@@ -413,6 +426,10 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 
 /* toast + confetti */
 .cal .d.hol{color:var(--sun)}
+.cal .d.sat{color:var(--sat)}
+/* PC: cells sized by screen height instead of square, so the whole month fits without scrolling */
+@media (min-width:700px){ #shCal .cal .d{aspect-ratio:auto;height:clamp(36px,6.5vh,54px)} #shCal .panel{gap:10px} }
+.cal .d.held.sat{color:var(--masu-ink)}
 .cal .d.held.hol{color:var(--masu-ink)}
 .offline{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:45;
   background:var(--danger);color:#fff;font-size:12px;font-weight:800;padding:6px 14px;border-radius:999px;box-shadow:0 4px 14px color-mix(in srgb,#000 30%,transparent);max-width:calc(100% - 32px);text-align:center}
@@ -630,10 +647,6 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <div class="calhead"><button id="calPrev" aria-label="前の月">‹</button><h2 id="calTitle"></h2><button id="calNext" aria-label="次の月">›</button></div>
   <div class="cal" id="cal"></div>
   <p class="rule-hint" id="calLegend"></p>
-  <div class="stats">
-    <div class="stat"><div class="label" id="kingLabel">ます王</div><div class="v" id="kingV">—</div><ol id="kingList"></ol></div>
-    <div class="stat"><div class="label">今日の人気ゲーム</div><div class="v" id="popV">—</div><ol id="popList"></ol></div>
-  </div>
 </div></div>
 
 <!-- settings sheet -->
@@ -652,6 +665,8 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
     <div class="inline"><input class="input" id="rName" maxlength="16" required enterkeyhint="done"><button class="btn primary">保存</button></div>
     <span class="label" style="margin-top:6px">アイコンの色</span>
     <div class="swatches" id="colorPick" role="radiogroup" aria-label="アイコンの色"></div>
+    <span class="label" style="margin-top:6px">アイコンの形</span>
+    <div class="shapes" id="shapePick" role="radiogroup" aria-label="アイコンの形"></div>
   </form>
   <form class="sec" id="pinForm" data-tab="me">
     <span class="label">合言葉(数字4桁・任意)</span>
@@ -905,7 +920,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.collection("members").onSnapshot(snap => {
     if (S.gid !== gid) return;
     const m = {};
-    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 11, null), hasPin:d.hasPin === true }; });
+    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 12, null), hasPin:d.hasPin === true, shape:Object.hasOwn(SHAPES, d.shape || "") ? d.shape : "circle" }; });
     S.members = m;
     if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
     render();
@@ -1050,14 +1065,23 @@ function colorIndex(id){
   let x = 0; for (const ch of String(id)) x = (x * 31 + ch.charCodeAt(0)) >>> 0;
   return x % 12;
 }
+const AV_COLORS = 13;            // 12 hues + black
+// icon shapes; the CSS class "shape-<key>" draws each one (circle is the plain .av)
+const SHAPES = { circle:"まる", squircle:"角丸", badge:"バッジ", flower:"お花", hexagon:"六角形" };
+const avBg = i => i === 12 ? "#141318" : `hsl(${i * 30} 55% 44%)`;
 function avatar(id, name){
-  return h("span", { class:"av", style:`--h:${colorIndex(id) * 30}`, "aria-hidden":"true", text:[...(name || "?")][0] });
+  const m = S.members[id], shape = m && m.shape && m.shape !== "circle" ? m.shape : "";
+  return h("span", { class:"av" + (shape ? " shape-" + shape : ""), style:`--avbg:${avBg(colorIndex(id))}`, "aria-hidden":"true", text:[...(name || "?")][0] });
 }
 function renderColorPick(){
   const mid = (S.me || S.uid), m = S.members[mid]; if (!m) return;
-  const cur = colorIndex(mid), ch = [...(m.name || "?")][0];
-  $("colorPick").replaceChildren(...Array.from({ length:12 }, (_, i) => h("button", { type:"button", class:"swatch" + (i === cur ? " on" : ""),
-    style:`--h:${i * 30}`, role:"radio", "aria-checked":String(i === cur), "aria-label":`色${i + 1}`,
+  const cur = colorIndex(mid), ch = [...(m.name || "?")][0], curShape = m.shape || "circle";
+  $("shapePick").replaceChildren(...Object.keys(SHAPES).map(k => h("button", { type:"button", class:"shape-opt" + (k === curShape ? " on" : ""),
+    role:"radio", "aria-checked":String(k === curShape), onclick:() => saveShape(k) },
+    h("span", { class:"av" + (k === "circle" ? "" : " shape-" + k), style:`--avbg:${avBg(cur)}`, "aria-hidden":"true", text:ch }),
+    h("span", { text:SHAPES[k] }))));
+  $("colorPick").replaceChildren(...Array.from({ length:AV_COLORS }, (_, i) => h("button", { type:"button", class:"swatch" + (i === cur ? " on" : ""),
+    style:`--avbg:${avBg(i)}`, role:"radio", "aria-checked":String(i === cur), "aria-label": i === 12 ? "黒" : `色${i + 1}`,
     onclick:() => saveColor(i) }, ch)));
 }
 // how long ago, in the coarsest unit that fits
@@ -1194,7 +1218,7 @@ function openSheet(id){
   lastFocus = document.activeElement;
   $(id).hidden = false; document.body.classList.add("sheet-open");
   const f = $(id).querySelector(".x"); f && f.focus({preventScroll:true});
-  renderSheets();
+  renderSheets(); updateCounters();
 }
 function closeSheets(silent){
   const open = document.querySelector(".sheet:not([hidden])");
@@ -1217,7 +1241,24 @@ function flushComment(){
 function show(id){ ["sLoading","sError","sHome","sJoin","sMain"].forEach(s => $(s).hidden = s !== id); document.body.classList.toggle("fit", id === "sMain"); }
 function fail(msg){ S.fatal = msg; closeSheets(true); render(); }
 
+// "3/16" counters; counted in characters as people see them
+const COUNTED = ["cName", "cMe", "jName", "rName", "gNameInput"];
+function updateCounters(){
+  COUNTED.forEach(id => {
+    const el = $(id), c = $(id + "Count"); if (!el || !c) return;
+    const n = [...el.value].length, max = Number(el.getAttribute("maxlength"));
+    c.textContent = `${n}/${max}`; c.classList.toggle("full", n >= max);
+  });
+}
+COUNTED.forEach(id => {
+  const el = $(id); if (!el) return;
+  const c = h("span", { class:"count", id:id + "Count", "aria-live":"polite" });
+  const wrap = h("span", { class:"in-wrap" });
+  el.before(wrap); wrap.append(el, c);
+  el.addEventListener("input", updateCounters);
+});
 function render(){
+  queueMicrotask(updateCounters);
   const inGroup = s => { ["grpBtn","setBtn","shareBtn","calBtn"].forEach(id => $(id).hidden = !s); };
   if (S.fatal){ $("errMsg").textContent = S.fatal; $("errHome").hidden = !S.db; inGroup(false); return show("sError"); }
   if (!S.db) return show("sLoading");
@@ -1483,10 +1524,11 @@ function renderSheets(){
     const me = S.members[S.me];
     $("profileHead").replaceChildren(
       avatar(S.me, me.name),
-      h("div", { class:"pf-name", text:me.name }),
-      h("div", { class:"pf-sub" },
-        h("span", { text:`「${S.group.name}」でのあなた` }),
-        h("span", { class:"lock", text: me.hasPin ? "🔒 合言葉あり" : "合言葉なし" })));
+      h("div", { class:"pf-text" },
+        h("div", { class:"pf-name", text:me.name }),
+        h("div", { class:"pf-sub" },
+          h("span", { text:`「${S.group.name}」でのあなた` }),
+          h("span", { class:"lock", text: me.hasPin ? "🔒 合言葉あり" : "合言葉なし" }))));
   }
   if (isOpen("shSet") && document.activeElement !== $("gNameInput") && !$("gNameInput").dataset.dirty) $("gNameInput").value = S.group.name;
   if (isOpen("shSet")){
@@ -1524,32 +1566,18 @@ async function renderCal(){
   list.forEach(a => { if (isMasu(a) && S.members[a.uid]) cnt[a.day] = (cnt[a.day] || 0) + 1; });
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const cells = DOW.map((d, i) => h("div", { class:"dow" + (i === 0 ? " sun" : i === 6 ? " sat" : ""), text:d }));
-  for (let i = 0; i < first; i++) cells.push(h("div", { class:"d x" }));
+  for (let i = 0; i < first; i++) cells.push(h("div", { class:"d pad" }));
   let held = 0;
   for (let d = 1; d <= days; d++){
     const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, isHeld = n > 0 && n >= needFor(key, ovs).need;
     if (isHeld) held++;
-    cells.push(h("div", { class: "d" + (isHeld ? " held" : "") + (key === S.day ? " today" : "") + (isHoliday(key) ? " hol" : "") },
+    const wd = (first + d - 1) % 7;
+    cells.push(h("div", { class: "d" + (isHeld ? " held" : "") + (key === S.day ? " today" : "") + (isHoliday(key) || wd === 0 ? " hol" : wd === 6 ? " sat" : "") },
       String(d), n ? h("small", { text: isHeld ? "開催" : `◎${n}` }) : null));
   }
   $("cal").replaceChildren(...cells);
   $("calLegend").textContent = `開催 ${held}日・◎は「ます」の人数・いまのルール(${ruleText(S.group, Object.keys(S.members).length)})で判定`;
 
-  // stats for the shown month
-  const kc = {};
-  list.forEach(a => { if (isMasu(a) && S.members[a.uid] && a.day <= S.day) kc[a.uid] = (kc[a.uid] || 0) + 1; });
-  const kings = Object.keys(kc).sort((a,b) => kc[b] - kc[a]);
-  $("kingLabel").textContent = `${m}月のます王`;
-  if (kings.length){
-    const top = kc[kings[0]];
-    $("kingV").textContent = "👑 " + kings.filter(k => kc[k] === top).map(k => S.members[k].name).join("・");
-    $("kingList").replaceChildren(...kings.slice(0, 3).map(k => h("li", { text: `${S.members[k].name} ${kc[k]}日` })));
-  } else { $("kingV").textContent = "まだいません"; $("kingList").replaceChildren(); }
-  const gc = {};
-  Object.values(answersFor(S.day)).forEach(a => { if (a.game && a.status !== "sen") gc[a.game] = (gc[a.game] || 0) + 1; });
-  const pg = Object.keys(gc).sort((a,b) => gc[b] - gc[a]);
-  $("popV").textContent = pg.length ? pg[0] : "まだなし";
-  $("popList").replaceChildren(...pg.slice(0, 3).map(g => h("li", { text: `${g} ${gc[g]}票` })));
 }
 
 // ---------- navigation ----------
@@ -1626,6 +1654,7 @@ function memberBody(m){
   const b = { name:m.name, joinedAt:m.joinedAt };
   if (m.color != null) b.color = m.color;
   if (m.hasPin) b.hasPin = true;
+  if (m.shape && m.shape !== "circle") b.shape = m.shape;
   return b;
 }
 async function saveMember(patch){
@@ -1637,6 +1666,12 @@ async function saveMember(patch){
 async function saveName(name){
   await saveMember({ name });
   ls.set("name", name);
+}
+async function saveShape(k){
+  const mid = S.me || S.uid, prev = S.members[mid]; if (!prev || (prev.shape || "circle") === k) return;
+  S.members = { ...S.members, [mid]: { ...prev, shape:k } }; render();
+  try { await saveMember({ shape:k }); toast("保存しました"); }
+  catch (err){ onWriteError(err); }
 }
 async function saveColor(i){
   const mid = S.me || S.uid, prev = S.members[mid]; if (!prev) return;
