@@ -28,6 +28,7 @@
   --none:#4b4562; --coral:#ff7a5c; --danger:#ff8a7a;
   --sat:#86b6ff; --sun:#ff8f8f; --today:#ff7a5c; --today-ink:#2a0d05; --tmrw:#b9a2ff; --tmrw-ink:#1a0f3a;
   --wd0:#ff8f8f; --wd1:#ffd23f; --wd2:#ff9a52; --wd3:#5fd0ff; --wd4:#6ee08a; --wd5:#e8b64c; --wd6:#86b6ff;
+  --sky:#7fd3ff; --sky-ink:#06263a;
   --f-display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
   --f-body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
   color-scheme:dark;
@@ -41,6 +42,7 @@
   --none:#cbc4da; --coral:#f0603f; --danger:#c8402c;
   --sat:#2563c9; --sun:#cf3434; --today:#f0603f; --today-ink:#ffffff; --tmrw:#7552d6; --tmrw-ink:#ffffff;
   --wd0:#cf3434; --wd1:#a87c00; --wd2:#d0601a; --wd3:#0f86b8; --wd4:#2e8f45; --wd5:#9a6f0c; --wd6:#2563c9;
+  --sky:#8fd8ff; --sky-ink:#06263a;
   color-scheme:light;
 }}
 :root[data-theme="light"]{
@@ -52,6 +54,7 @@
   --none:#cbc4da; --coral:#f0603f; --danger:#c8402c;
   --sat:#2563c9; --sun:#cf3434; --today:#f0603f; --today-ink:#ffffff; --tmrw:#7552d6; --tmrw-ink:#ffffff;
   --wd0:#cf3434; --wd1:#a87c00; --wd2:#d0601a; --wd3:#0f86b8; --wd4:#2e8f45; --wd5:#9a6f0c; --wd6:#2563c9;
+  --sky:#8fd8ff; --sky-ink:#06263a;
   color-scheme:light;
 }
 *{box-sizing:border-box}
@@ -225,6 +228,9 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable;ov
 .sub>span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #scoreSub{min-height:1.5em;font-variant-numeric:tabular-nums;font-size:14px;font-weight:800;color:var(--fg)}
 .score{transition:background .35s ease,border-color .35s ease,box-shadow .35s ease}
+.score.skip{background:var(--sky);border-color:var(--sky);box-shadow:0 0 0 3px color-mix(in srgb,var(--sky) 30%,transparent)}
+.score.skip .day b,.score.skip #scoreSub,.score.skip .count .n,.score.skip .count .of,.score.skip .count .u{color:var(--sky-ink)}
+.score.skip.pop{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .score.held{background:var(--masu);border-color:var(--masu);box-shadow:0 0 0 3px color-mix(in srgb,var(--masu) 30%,transparent),0 0 32px color-mix(in srgb,var(--masu) 30%,transparent)}
 .score.held .day b,.score.held #scoreSub,.score.held .count .n,.score.held .count .of,.score.held .count .u{color:var(--masu-ink)}
 .score.held.soft{background:color-mix(in srgb,var(--masu) 22%,var(--surface));box-shadow:none}
@@ -1376,16 +1382,20 @@ function renderMain(){
   const rest = rule.need - masuN;
   const fest = masuN >= rule.need && masuN > 0;
   const dayWord = day === S.day ? "今日" : day === addDays(S.day, 1) ? "明日" : "この日";
+  // everyone has answered and even the maybes can't make it: the day is off
+  const skip = !fest && ids.length > 0 && ids.every(id => today[id]) && masuN + tabunN < rule.need;
   let status;
   if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
+  else if (skip) status = `⏭ ${dayWord}は開催スキップです!`;
   else if (rule.override) status = `${dayWord}だけ${rule.need}人でOK・あと${rest}人`;
   else if (rule.open) status = `${rule.need}人いればやる・あと${rest}人`;
   else status = `あと${rest}人で開催`;
-  $("scoreSub").textContent = status + (tabunN ? `・たぶん${tabunN}人` : "");
-  const card = $("scoreCard"), wasHeld = card.classList.contains("held");
+  $("scoreSub").textContent = status + (tabunN && !skip ? `・たぶん${tabunN}人` : "");
+  const card = $("scoreCard"), wasHeld = card.classList.contains("held"), wasSkip = card.classList.contains("skip");
   card.classList.toggle("held", fest);
   card.classList.toggle("soft", fest && !!rule.open);
-  if (fest && !wasHeld){ card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); }
+  card.classList.toggle("skip", skip);
+  if ((fest && !wasHeld) || (skip && !wasSkip)){ card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); }
   if (S.ansReady){
     if (S.festState[day] === false && fest) confetti($("scoreCard"));
     S.festState[day] = fest;
