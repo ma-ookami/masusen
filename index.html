@@ -1562,6 +1562,10 @@ function renderMain(){
   if (me){
     const bits = detailText(me);
     line.append(h("button", { class:"opt-btn", onclick:() => openSheet("shDetail") }, bits ? "オプションを変える" : (me.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)")));
+  } else if (myUsual && S.canWrite !== false){
+    const u = weeklyOf(S.me, day);
+    line.append(h("button", { class:"opt-btn", onclick:() => { saveMine({ status:u.status, conds:[...u.conds] }, day); openSheet("shDetail"); } },
+      u.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)"));
   }
   const wkSt = S.me ? (weeklyOf(S.me, day) || {}).status || null : null;
   const wkName = wkSt ? `毎週の「${STATUSES[wkSt].label}」` : "";
