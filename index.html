@@ -1461,7 +1461,7 @@ function renderMain(){
     return h("li", { class: "mem " + st },
       h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null),
       h("span", { class:"ago", text: a ? agoText(a.updatedAt) : "" }),
-      h("span", { class:"st " + (a ? st : ""), text: a ? `${STATUSES[st].ic} ${STATUSES[st].label}` : "… 未回答" }),
+      a ? h("span", { class:"st " + st, text:`${STATUSES[st].ic} ${STATUSES[st].label}` }) : h("span"),
       meta.length ? h("div", { class:"meta" }, meta) : null);
   }));
   $("answeredN").textContent = `${sorted.filter(id => today[id]).length} / ${sorted.length}人が返事`;
