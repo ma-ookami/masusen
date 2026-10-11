@@ -109,13 +109,14 @@ h2{font-family:var(--f-display);font-weight:400;font-size:17px;margin:0;text-wra
 .screen{display:flex;flex-direction:column;gap:14px}
 .hero{text-align:center;padding-block:18px 6px}
 .hero .big{font-family:var(--f-display);font-size:clamp(44px,13vw,72px);line-height:1.05;margin:0}
-.hero .big.home{font-size:clamp(20px,6.4vw,38px);line-height:1.35;letter-spacing:.04em;white-space:nowrap}
+.hero .home-lead{margin:0;font-family:var(--f-display);font-weight:400;font-size:clamp(17px,4.8vw,22px);letter-spacing:.06em}
+.hero .big.home{font-size:clamp(28px,9.4vw,54px);line-height:1.2;letter-spacing:.04em;white-space:nowrap;margin-top:2px}
 #sHome .hero{padding-block:10px 0}
 #sHome{font-weight:700;letter-spacing:.02em;font-size:16px}
 #sHome .label{font-size:13px}
 #sHome .rule-hint,#sHome .muted{font-size:13px}
 #sHome .steps li{font-size:13px}
-#sHome .home-actions .btn{font-size:15px}
+#sHome .home-actions .btn{font-size:clamp(13px,3.9vw,15px);padding-inline:4px}
 #sHome .input{font-weight:700}
 .home-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .home-actions .btn{padding:12px 6px;font-size:14px}
@@ -453,7 +454,8 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 
   <section class="screen" id="sHome" hidden>
     <div class="hero">
-      <p class="big home">集まれ<span class="m">ます</span>か?ま<span class="s">せん</span>か?</p>
+      <p class="home-lead">今日、集まれ…</p>
+      <p class="big home"><span class="m">ます</span>か?ま<span class="s">せん</span>か?</p>
       <p>ゲームできるか、ボタンひとつで返事。そろったら開催!</p>
     </div>
     <ol class="steps" id="homeSteps" hidden>
