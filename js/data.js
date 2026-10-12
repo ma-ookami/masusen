@@ -37,7 +37,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.collection("members").onSnapshot(snap => {
     if (S.gid !== gid) return;
     const m = {};
-    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 15, null), hasPin:d.hasPin === true, weekly:cleanWeekly(d.weekly), shape:Object.hasOwn(SHAPES, d.shape || "") ? d.shape : "circle" }; });
+    snap.docs.forEach(doc => { const d = doc.data(); if (d && str(d.name,16)) m[doc.id] = { name:str(d.name,16), joinedAt:num(d.joinedAt)||0, color:clamp(d.color, 0, 15, null), hasPin:d.hasPin === true, weekly:cleanWeekly(d.weekly), char:d.char && typeof d.char === "object" ? cleanChar(d.char) : null, shape:Object.hasOwn(SHAPES, d.shape || "") ? d.shape : "circle" }; });
     S.members = m;
     if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
     render();

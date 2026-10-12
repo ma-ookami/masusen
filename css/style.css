@@ -64,6 +64,17 @@ button{cursor:pointer}
 .mascot:not(.happy):not(.sad):not(.sleep) .f-normal,.mascot.happy .f-happy,.mascot.sad .f-sad,.mascot.sleep .f-sleep{display:inline}
 .mascot .eyes{transform-box:fill-box;transform-origin:center}
 .mascot.blink .eyes{animation:mBlink .3s steps(2)}
+.char-top{display:flex;align-items:center;gap:14px}
+.mascot.char-prev{width:84px;height:96px;flex:none;margin:4px 6px 0}
+.char-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.char-side .switch-row{width:100%}
+.char-parts{display:flex;flex-direction:column;gap:8px}
+.char-row{display:flex;flex-direction:column;gap:4px}
+.char-row .chips{gap:6px}
+.char-colors{display:flex;flex-wrap:wrap;gap:8px}
+.char-sw{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;padding:0}
+.char-sw span{width:10px;height:10px;border-radius:50%}
+.char-sw.on{border-color:var(--fg);box-shadow:0 0 0 2px var(--surface) inset}
 .mascots{flex:none;display:flex;align-items:flex-end;gap:8px;margin:-6px 0 -2px}
 .mascot.lcd{width:34px;height:40px;margin:0}
 @media (max-width:379px){ .mascots{gap:5px} .mascot.lcd{width:30px;height:36px} }

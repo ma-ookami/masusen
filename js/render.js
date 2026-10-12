@@ -123,6 +123,7 @@ function renderMain(){
   card.classList.toggle("soft", fest && !!rule.open);
   card.classList.toggle("skip", skip);
   card.classList.toggle("rest", !!rule.rest);
+  renderMascotRow();
   setMascotMood(lateNight() ? "sleep" : fest ? "happy" : skip ? "sad" : "");
   if ((fest && !wasHeld) || (skip && !wasSkip)){ card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); }
   if (S.ansReady){

@@ -101,13 +101,26 @@ service cloud.firestore {
         && (!('restDays' in d) || (d.restDays is list && d.restDays.size() <= 7 && d.restDays.hasOnly([0, 1, 2, 3, 4, 5, 6])));
     }
     function validMember(d) {
-      return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape', 'weekly'])
+      return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape', 'weekly', 'char'])
         && isText(d.name, 1, 16)
         && d.joinedAt is int
         && (!('color' in d) || intIn(d.color, 0, 15))
         && d.get('hasPin', false) is bool
         && d.get('shape', 'circle') in ['circle', 'squircle', 'badge', 'flower', 'hexagon']
-        && (!('weekly' in d) || validWeekly(d.weekly));
+        && (!('weekly' in d) || validWeekly(d.weekly))
+        && (!('char' in d) || validChar(d.char));
+    }
+    // own character: one choice per part
+    function validChar(c) {
+      return c is map && c.keys().hasOnly(['head', 'wear', 'body', 'screen', 'eye', 'mouth', 'cheeks', 'tail'])
+        && c.get('head', 'none') in ['none', 'antenna', 'twin', 'cat', 'signal']
+        && c.get('wear', 'none') in ['none', 'headphones']
+        && c.get('body', 'yellow') in ['yellow', 'coral', 'mint', 'sky', 'grape', 'white', 'black']
+        && c.get('screen', 'yellow') in ['yellow', 'red', 'green', 'blue', 'pink', 'white']
+        && c.get('eye', 'square') in ['square', 'round', 'wide', 'dot']
+        && c.get('mouth', 'soft') in ['soft', 'wide', 'cat', 'flat']
+        && c.get('cheeks', 'off') in ['off', 'on']
+        && c.get('tail', 'off') in ['off', 'on'];
     }
     function validAnswer(d) {
       return d.keys().hasOnly(['uid', 'day', 'month', 'status', 'from', 'until', 'game', 'conds', 'comment', 'cutoff', 'updatedAt'])

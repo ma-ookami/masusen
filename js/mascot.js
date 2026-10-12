@@ -2,40 +2,42 @@
 // index.html から順番に読み込みます(前のファイルで決めた名前を使います)。
 
 // ---------- mascot ----------
-// LCD: a yellow frame with a dark screen; the face glows. head: "antenna" or "signal"
-const MASCOT_HEADS = {
-  antenna: `<g class="ant"><rect x="15.2" y="0.8" width="1.6" height="4.5" fill="var(--masu-deep)"/><circle class="bulb" cx="16" cy="1.3" r="1.9"/></g>`,
-  cat: `<path class="tail" d="M28 27 Q34.5 27 34.5 20.5 Q34.5 17 35.5 15" fill="none" stroke="var(--masu-deep)" stroke-width="2.4" stroke-linecap="round"/>
-    <g class="ear earL"><path d="M3.5 9 L5.5 0.8 L12.5 5.5 Z" fill="var(--masu)"/><path d="M5.6 6.5 L6.6 3 L9.6 5.2 Z" fill="#ff8a7a"/></g>
-    <g class="ear earR"><path d="M28.5 9 L26.5 0.8 L19.5 5.5 Z" fill="var(--masu)"/><path d="M26.4 6.5 L25.4 3 L22.4 5.2 Z" fill="#ff8a7a"/></g>`,
-  headphones: `<g class="ant antL"><path d="M10.5 7 L7.5 -1.5" stroke="var(--masu-deep)" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="7.3" cy="-2" r="1.6"/></g>
-    <g class="ant antR"><path d="M21.5 7 L24.5 -1.5" stroke="var(--masu-deep)" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="24.7" cy="-2" r="1.6"/></g>`,
+// LCD robot built from parts. Each face (normal / happy / sad / sleep / yawn) is a group shown by the mood class.
+const CHAR_PARTS = {
+  head:   { label:"頭", opts:{ none:"なし", antenna:"1本アンテナ", twin:"2本アンテナ", cat:"ねこ耳", signal:"電波" } },
+  wear:   { label:"かぶりもの", opts:{ none:"なし", headphones:"ヘッドホン" } },
+  body:   { label:"体の色", color:true, opts:{ yellow:["#ffc531","#c98a00"], coral:["#ff8a7a","#d0604f"], mint:["#6fd6a8","#3a9f74"],
+            sky:["#7cc4ff","#3b88c9"], grape:["#b9a4ff","#7f63d1"], white:["#eeeeee","#b5b5b5"], black:["#4a5068","#2a2e40"] } },
+  screen: { label:"画面の色", color:true, opts:{ yellow:["#ffd54a","#1d2230"], red:["#ff7a6b","#2a1517"], green:["#7dffa0","#0f2a1c"],
+            blue:["#7fd8ff","#0f2030"], pink:["#ff9fd0","#2a1424"], white:["#f4f4f4","#22252e"] } },
+  eye:    { label:"目", opts:{ square:"四角", round:"まる", wide:"横長", dot:"点" } },
+  mouth:  { label:"口", opts:{ soft:"小さめ", wide:"にっこり", cat:"ω", flat:"まっすぐ" } },
+  cheeks: { label:"ほっぺ", opts:{ off:"なし", on:"あり" } },
+  tail:   { label:"しっぽ", opts:{ off:"なし", on:"あり" } },
 };
-// room above the body for taller heads
-const MASCOT_VIEW = { headphones:"0 -4 32 38" };
-// drawn over the body
-const MASCOT_OVER = {
-  headphones: `<g class="hp"><path d="M3.5 13 Q3.5 1.5 16 1.5 Q28.5 1.5 28.5 13" fill="none" stroke="#3a3f52" stroke-width="2.2"/>
-    <rect x="0" y="11" width="4.2" height="8" rx="2" fill="#3a3f52"/><rect x="27.8" y="11" width="4.2" height="8" rx="2" fill="#3a3f52"/></g>`,
+const CHAR_PRESETS = {
+  antenna:    { head:"antenna", wear:"none", body:"yellow", screen:"red", eye:"square", mouth:"soft", cheeks:"off", tail:"off" },
+  headphones: { head:"twin", wear:"headphones", body:"yellow", screen:"yellow", eye:"square", mouth:"wide", cheeks:"off", tail:"off" },
+  cat:        { head:"cat", wear:"none", body:"yellow", screen:"green", eye:"round", mouth:"cat", cheeks:"on", tail:"on" },
 };
-// starts just right of the head (clear of the cat's ear) so it is easy to see
+const CHAR_DEFAULT = { head:"antenna", wear:"none", body:"sky", screen:"blue", eye:"round", mouth:"wide", cheeks:"off", tail:"off" };
+const cleanChar = c => Object.fromEntries(Object.entries(CHAR_PARTS).map(([k, p]) => [k, c && p.opts[c[k]] ? c[k] : CHAR_DEFAULT[k]]));
 const MASCOT_ZZZ = `<g class="zzz" fill="var(--fg)" fill-opacity=".6" font-family="var(--f-body),sans-serif" font-weight="900">
   <text x="29" y="11" font-size="6.5">z</text><text x="29" y="11" font-size="8">z</text><text x="29" y="11" font-size="9.5">z</text></g>`;
-// each one's face: eye shape, mouth, cheeks, screen colours
-const MASCOT_LOOK = {
-  antenna:    { eye:"square", mouth:"soft", glow:"#ff7a6b", screen:"#2a1517" },
-  headphones: { eye:"square", mouth:"wide" },
-  cat:        { eye:"round", mouth:"cat", cheeks:true, glow:"#7dffa0", screen:"#0f2a1c" },
-};
-function lcdMascot(head){
-  const L = MASCOT_LOOK[head], G = L.glow || "#ffd54a";
+function lcdMascot(c){
+  c = cleanChar(c);
+  const [B, BD] = CHAR_PARTS.body.opts[c.body], [G, SCR] = CHAR_PARTS.screen.opts[c.screen];
   const st = `fill="none" stroke="${G}" stroke-width="1.6" stroke-linecap="square"`, rd = `fill="none" stroke="${G}" stroke-width="1.6" stroke-linecap="round"`;
-  const eyes = `<g class="eyes">${L.eye === "round"
-    ? `<circle cx="11.5" cy="12" r="2" fill="${G}"/><circle cx="20.5" cy="12" r="2" fill="${G}"/>`
-    : `<rect x="10" y="10" width="3" height="4" fill="${G}"/><rect x="19" y="10" width="3" height="4" fill="${G}"/>`}</g>`;
-  const mouth = { soft:"M12.5 16.8 Q16 18.6 19.5 16.8", wide:"M11.5 16.3 Q16 20 20.5 16.3", cat:"M12.5 16.5 Q14.2 18.6 16 16.6 Q17.8 18.6 19.5 16.5" }[L.mouth];
-  const cheeks = (o = .8) => L.cheeks ? `<rect x="7.5" y="15" width="3" height="1.4" rx=".7" fill="#ff8a7a" opacity="${o}"/><rect x="21.5" y="15" width="3" height="1.4" rx=".7" fill="#ff8a7a" opacity="${o}"/>` : "";
-  const led = c => `<circle cx="26" cy="23.2" r=".9" fill="${c}"/>`;
+  const eyeShape = {
+    square:`<rect x="10" y="10" width="3" height="4" fill="${G}"/><rect x="19" y="10" width="3" height="4" fill="${G}"/>`,
+    round:`<circle cx="11.5" cy="12" r="2" fill="${G}"/><circle cx="20.5" cy="12" r="2" fill="${G}"/>`,
+    wide:`<rect x="9" y="11.2" width="5" height="2.4" rx="1" fill="${G}"/><rect x="18" y="11.2" width="5" height="2.4" rx="1" fill="${G}"/>`,
+    dot:`<circle cx="11.5" cy="12.2" r="1.2" fill="${G}"/><circle cx="20.5" cy="12.2" r="1.2" fill="${G}"/>`,
+  }[c.eye];
+  const eyes = `<g class="eyes">${eyeShape}</g>`;
+  const mouth = { soft:"M12.5 16.8 Q16 18.6 19.5 16.8", wide:"M11.5 16.3 Q16 20 20.5 16.3", cat:"M12.5 16.5 Q14.2 18.6 16 16.6 Q17.8 18.6 19.5 16.5", flat:"M13 17.2 H19" }[c.mouth];
+  const cheeks = (o = .8) => c.cheeks === "on" ? `<rect x="7.5" y="15" width="3" height="1.4" rx=".7" fill="#ff8a7a" opacity="${o}"/><rect x="21.5" y="15" width="3" height="1.4" rx=".7" fill="#ff8a7a" opacity="${o}"/>` : "";
+  const led = col => `<circle cx="26" cy="23.2" r=".9" fill="${col}"/>`;
   const faces = {
     normal: eyes + `<path d="${mouth}" ${rd}/>` + cheeks() + led("#4caf50"),
     happy: `<path d="M9.5 13 L11.5 10.5 L13.5 13" ${st}/><path d="M18.5 13 L20.5 10.5 L22.5 13" ${st}/><path d="M11.5 16 L16 18.5 L20.5 16" ${st}/>` + cheeks(1) + led("#4caf50"),
@@ -43,18 +45,52 @@ function lcdMascot(head){
     sleep: `<g opacity=".55"><path d="M10 12.5 H13" ${st}/><path d="M19 12.5 H22" ${st}/><path d="M15 17 H17" ${st}/></g>` + cheeks(.35) + led("#e66"),
     yawn: `<g opacity=".7"><path d="M10 12 L13 13" ${st}/><path d="M22 12 L19 13" ${st}/><ellipse cx="16" cy="17.3" rx="2.2" ry="2.6" fill="${G}"/></g>` + led("#e66"),
   };
+  const head = {
+    none:"",
+    antenna:`<g class="ant"><rect x="15.2" y="0.8" width="1.6" height="4.5" fill="${BD}"/><circle class="bulb" cx="16" cy="1.3" r="1.9"/></g>`,
+    twin:`<g class="ant antL"><path d="M10.5 7 L7.5 -1.5" stroke="${BD}" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="7.3" cy="-2" r="1.6"/></g>
+      <g class="ant antR"><path d="M21.5 7 L24.5 -1.5" stroke="${BD}" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="24.7" cy="-2" r="1.6"/></g>`,
+    cat:`<g class="ear earL"><path d="M3.5 9 L5.5 0.8 L12.5 5.5 Z" fill="${B}"/><path d="M5.6 6.5 L6.6 3 L9.6 5.2 Z" fill="#ff8a7a"/></g>
+      <g class="ear earR"><path d="M28.5 9 L26.5 0.8 L19.5 5.5 Z" fill="${B}"/><path d="M26.4 6.5 L25.4 3 L22.4 5.2 Z" fill="#ff8a7a"/></g>`,
+    signal:`<rect x="15.2" y="2.5" width="1.6" height="3" fill="${BD}"/><circle cx="16" cy="2.3" r="1.1" fill="${BD}"/>
+      <path class="wave" d="M12.8 1.6 Q16 -1.4 19.2 1.6" fill="none" stroke="${BD}" stroke-width="1.1" stroke-linecap="round"/>`,
+  }[c.head];
+  const tail = c.tail === "on" ? `<path class="tail" d="M28 27 Q34.5 27 34.5 20.5 Q34.5 17 35.5 15" fill="none" stroke="${BD}" stroke-width="2.4" stroke-linecap="round"/>` : "";
+  const wear = c.wear === "headphones" ? `<g class="hp"><path d="M3.5 13 Q3.5 1.5 16 1.5 Q28.5 1.5 28.5 13" fill="none" stroke="#3a3f52" stroke-width="2.2"/>
+    <rect x="0" y="11" width="4.2" height="8" rx="2" fill="#3a3f52"/><rect x="27.8" y="11" width="4.2" height="8" rx="2" fill="#3a3f52"/></g>` : "";
   const noise = `<g class="noise"><rect x="5.5" y="8" width="21" height="1.2" fill="${G}" opacity=".5"/><rect x="8" y="12" width="16" height=".8" fill="#fff" opacity=".35"/><rect x="5.5" y="15" width="12" height="1" fill="${G}" opacity=".4"/></g>`;
   const lines = [8,10,12,14,16,18,20].map(y => `<rect x="6" y="${y}" width="20" height=".5" fill="#fff" opacity=".05"/>`).join("");
-  return `<svg viewBox="${MASCOT_VIEW[head] || "0 0 32 34"}" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${MASCOT_HEADS[head]}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="var(--masu-deep)"/><rect x="2" y="3" width="28" height="22" rx="5" fill="var(--masu)"/>
-    <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="${L.screen || "#1d2230"}"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}${noise}</g>${MASCOT_OVER[head] || ""}${MASCOT_ZZZ}</svg>`;
+  // the twin antennas reach higher, so that one gets more room on top
+  const view = c.head === "twin" ? "0 -4 32 38" : "0 0 32 34";
+  return `<svg viewBox="${view}" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${tail}${head}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="${BD}"/><rect x="2" y="3" width="28" height="22" rx="5" fill="${B}"/>
+    <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="${SCR}"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}${noise}</g>${wear}${MASCOT_ZZZ}</svg>`;
 }
-$("mascot").innerHTML = lcdMascot("antenna");
-$("mascot2").innerHTML = lcdMascot("headphones");
-$("mascot3").innerHTML = lcdMascot("cat");
+// the row by the option button: members' own characters (mine first, then by join order, up to 4),
+// topped up with the regular three. Each slot is redrawn only when what it shows changes.
+const MASCOT_SLOTS = ["mascot", "mascot2", "mascot3", "mascot4"];
+function renderMascotRow(){
+  const ids = Object.keys(S.gid ? S.members : {}).filter(id => S.members[id].char)
+    .sort((a, b) => (b === S.me) - (a === S.me) || S.members[a].joinedAt - S.members[b].joinedAt).slice(0, 4);
+  const presets = [CHAR_PRESETS.antenna, CHAR_PRESETS.headphones, CHAR_PRESETS.cat].map(c => ({ c, who:null }));
+  const list = [...ids.map(id => ({ c:S.members[id].char, who:id })), ...presets].slice(0, ids.length ? 4 : 3);
+  MASCOT_SLOTS.forEach((sid, i) => {
+    const el = $(sid), it = list[i];
+    el.hidden = !it;
+    if (!it) return;
+    const key = JSON.stringify(it.c) + "|" + (it.who || "");
+    if (el.dataset.key === key) return;
+    el.dataset.key = key; el.dataset.who = it.who || "";
+    el.innerHTML = lcdMascot(it.c);
+    el.dataset.own = it.c.wear === "headphones" ? "groove" : it.c.head === "cat" || it.c.tail === "on" ? "twitch" : "glitch";
+    const name = it.who && S.members[it.who] ? S.members[it.who].name : "";
+    el.setAttribute("aria-label", name && !S.anon ? `${name}のキャラ` : "ますくん");
+    el.title = name && !S.anon ? `${name}のキャラ` : "ますくん";
+  });
+}
 // move -> how long it plays (ms)
 const MASCOT_MS = { twitch:700, blink:300, hop:750, wiggle:600, spin:700, look:1700, glitch:400, groove:1800, yawn:1800, tilt:1100, nod:900 };
 const MASCOT_MOVES = Object.keys(MASCOT_MS);
-const mascots = () => [$("mascot"), $("mascot2"), $("mascot3")];
+const mascots = () => [$("mascot"), $("mascot2"), $("mascot3"), $("mascot4")];
 let mascotMood = "";
 function setMascotMood(m){
   mascotMood = m;
@@ -85,7 +121,7 @@ function mascotDo(el, move, cheer){
 function mascotIdleMove(el){
   const r = Math.random();
   if (el.classList.contains("sleep")) return r < .5 ? "wiggle" : "yawn";
-  const own = { mascot2:"groove", mascot3:"twitch" }[el.id] || "glitch";   // headphones groove, the cat twitches its ears
+  const own = el.dataset.own || "glitch";   // headphones groove, cat ears / tails twitch
   return r < .35 ? "blink" : r < .55 ? "look" : r < .7 ? "hop" : r < .8 ? "wiggle" : r < .9 ? "glitch" : own;
 }
 // when I answer: ます = jump with a grin, たぶんます = tilt, せん = just a small nod (neither sad nor pleased)
@@ -99,6 +135,8 @@ mascots().forEach(el => {
     try { navigator.vibrate && navigator.vibrate(10); } catch {}
     if (el._nap) return mascotWake(el);
     mascotDo(el, el.classList.contains("sleep") ? "wiggle" : "hop");
+    const who = el.dataset.who;
+    if (who && S.members[who] && !S.anon) toast(who === S.me ? "あなたのキャラ" : `${S.members[who].name}のキャラ`);
   });
 });
 (function idle(last){
@@ -113,7 +151,47 @@ mascots().forEach(el => {
     idle(el);
   }, 5000 + Math.random() * 2000);
 })(null);
+renderMascotRow();
 if (lateNight()) setMascotMood("sleep");
+
+// ---------- キャラクタークリエイト (設定 → 自分) ----------
+// saved on my member data in this group, so everyone in the group sees it
+let charDraft = null, charTimer = null;
+const myCharSaved = () => (S.members[S.me] || {}).char || null;
+function renderCharMaker(){
+  if (!charDraft) charDraft = myCharSaved() || { ...CHAR_DEFAULT };
+  $("charPreview").innerHTML = lcdMascot(charDraft);
+  $("charParts").replaceChildren(...Object.entries(CHAR_PARTS).map(([k, p]) => h("div", { class:"char-row" },
+    h("span", { class:"label", text:p.label }),
+    h("div", { class:"chips" + (p.color ? " char-colors" : ""), role:"radiogroup", "aria-label":p.label },
+      Object.entries(p.opts).map(([v, o]) => p.color
+        ? h("button", { type:"button", class:"char-sw" + (charDraft[k] === v ? " on" : ""), role:"radio", "aria-checked":String(charDraft[k] === v),
+            "aria-label":v, style:`background:${o[k === "screen" ? 1 : 0]}`, onclick:() => setCharPart(k, v) },
+            k === "screen" ? h("span", { style:`background:${o[0]}` }) : null)
+        : h("button", { type:"button", class:"chip sm" + (charDraft[k] === v ? " on" : ""), role:"radio", "aria-checked":String(charDraft[k] === v),
+            onclick:() => setCharPart(k, v) }, o))))));
+  $("charShow").checked = !!myCharSaved();
+}
+function saveCharSoon(c){
+  if (S.canWrite === false) return toast("このページは閲覧のみです", true);
+  const mid = S.me; if (!mid || !S.members[mid]) return;
+  S.members = { ...S.members, [mid]: { ...S.members[mid], char:c } };
+  renderMascotRow(); setMascotMood(mascotMood);
+  clearTimeout(charTimer);
+  charTimer = setTimeout(async () => {
+    try { await saveMember({ char:S.members[mid].char }); toast(S.members[mid].char ? "キャラを保存しました(グループのみんなに見えます)" : "キャラを外しました"); }
+    catch (err){ onWriteError(err); }
+  }, 800);
+}
+function setCharPart(k, v){
+  charDraft = { ...charDraft, [k]: v };
+  saveCharSoon({ ...charDraft });
+  renderCharMaker();
+  mascotDo($("charPreview"), "hop");
+}
+$("charShow").addEventListener("change", e => { saveCharSoon(e.target.checked ? { ...charDraft } : null); });
+$("charPreview").addEventListener("click", () => mascotDo($("charPreview"), "hop"));
+$("charReset").addEventListener("click", () => { charDraft = { ...CHAR_DEFAULT }; saveCharSoon({ ...charDraft }); renderCharMaker(); });
 
 // day rollover at 4:00 and countdown refresh
 setInterval(() => {
