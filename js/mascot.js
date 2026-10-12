@@ -78,21 +78,32 @@ function lcdMascot(c){
   return `<svg viewBox="${view}" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${tail}${head}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="${BD}"/><rect x="2" y="3" width="28" height="22" rx="5" fill="${B}"/>
     <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="${SCR}"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}${faceAcc}${noise}</g>${wear}${item}${MASCOT_ZZZ}</svg>`;
 }
-// the row by the option button: members' own characters (mine first, then by join order, up to 4),
-// topped up with the regular three. Each slot is redrawn only when what it shows changes.
-const MASCOT_SLOTS = ["mascot", "mascot2", "mascot3", "mascot4"];
+// the row by the option button: two places for members' own characters (mine first, then by join order),
+// then the official one on the right. An empty place is a faint dashed circle that opens the character maker.
+// Each slot is redrawn only when what it shows changes.
+const MASCOT_SLOTS = ["mascot", "mascot2", "mascot3"];
+const OWN_PLACES = 2;
+const PLACE_SVG = `<svg viewBox="0 0 32 34" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+  <circle cx="16" cy="19" r="12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 2.4"/>
+  <path d="M16 15 V23 M12 19 H20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 function renderMascotRow(){
   const ids = Object.keys(S.gid ? S.members : {}).filter(id => S.members[id].char)
-    .sort((a, b) => (b === S.me) - (a === S.me) || S.members[a].joinedAt - S.members[b].joinedAt).slice(0, 4);
-  const presets = [CHAR_PRESETS.antenna, CHAR_PRESETS.headphones, CHAR_PRESETS.cat].map(c => ({ c, who:null }));
-  const list = [...ids.map(id => ({ c:S.members[id].char, who:id })), ...presets].slice(0, ids.length ? 4 : 3);
+    .sort((a, b) => (b === S.me) - (a === S.me) || S.members[a].joinedAt - S.members[b].joinedAt).slice(0, OWN_PLACES);
+  const list = [...ids.map(id => ({ c:S.members[id].char, who:id }))];
+  while (list.length < OWN_PLACES) list.push({ place:true });
+  list.push({ c:CHAR_PRESETS.antenna, who:null });
   MASCOT_SLOTS.forEach((sid, i) => {
     const el = $(sid), it = list[i];
-    el.hidden = !it;
-    if (!it) return;
-    const key = JSON.stringify(it.c) + "|" + (it.who || "");
+    const key = it.place ? "place" : JSON.stringify(it.c) + "|" + (it.who || "");
     if (el.dataset.key === key) return;
     el.dataset.key = key; el.dataset.who = it.who || "";
+    el.classList.toggle("place", !!it.place);
+    if (it.place){
+      el.innerHTML = PLACE_SVG; el.dataset.own = "";
+      el.classList.remove("happy", "sad", "sleep", ...MASCOT_MOVES, "cheer"); el._nap = false;
+      el.setAttribute("aria-label", "ここに自分のキャラを作れます"); el.title = "ここに自分のキャラを作れます";
+      return;
+    }
     el.innerHTML = lcdMascot(it.c);
     el.dataset.own = it.c.wear === "headphones" ? "groove" : it.c.head === "cat" || it.c.tail === "on" ? "twitch" : "glitch";
     const name = it.who && S.members[it.who] ? S.members[it.who].name : "";
@@ -100,10 +111,17 @@ function renderMascotRow(){
     el.title = name && !S.anon ? `${name}のキャラ` : "ますくん";
   });
 }
+// open 設定 → 自分 at the character maker
+function openCharMaker(){
+  if ($("setBtn").hidden) return;
+  $("setBtn").click(); showSetTab("me");
+  requestAnimationFrame(() => $("charPreview").closest(".sec").scrollIntoView({ block:"start", behavior:"smooth" }));
+}
 // move -> how long it plays (ms)
 const MASCOT_MS = { twitch:700, blink:300, hop:750, wiggle:600, spin:700, look:1700, glitch:400, groove:1800, yawn:1800, tilt:1100, nod:900 };
 const MASCOT_MOVES = Object.keys(MASCOT_MS);
-const mascots = () => [$("mascot"), $("mascot2"), $("mascot3"), $("mascot4")];
+// the ones that are characters right now (not an empty place)
+const mascots = () => MASCOT_SLOTS.map(id => $(id)).filter(el => !el.classList.contains("place"));
 let mascotMood = "";
 function setMascotMood(m){
   mascotMood = m;
@@ -143,8 +161,9 @@ function mascotReact(status){
   if (!move) return;
   mascots().forEach((el, i) => setTimeout(() => mascotDo(el, move, status === "masu"), i * 130));
 }
-mascots().forEach(el => {
+MASCOT_SLOTS.map(id => $(id)).forEach(el => {
   el.addEventListener("click", () => {
+    if (el.classList.contains("place")) return openCharMaker();
     try { navigator.vibrate && navigator.vibrate(10); } catch {}
     if (el._nap) return mascotWake(el);
     mascotDo(el, el.classList.contains("sleep") ? "wiggle" : "hop");

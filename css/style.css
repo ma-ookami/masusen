@@ -65,6 +65,8 @@ button{cursor:pointer}
 .mascot .eyes{transform-box:fill-box;transform-origin:center}
 .mascot.blink .eyes{animation:mBlink .3s steps(2)}
 .char-top{display:flex;align-items:center;gap:14px}
+.mascot.place{color:var(--muted);opacity:.45;transition:opacity .2s}
+.mascot.place:hover,.mascot.place:focus-visible{opacity:.8}
 .mascot.char-prev{width:84px;height:96px;flex:none;margin:4px 6px 0;transition:opacity .2s}
 .mascot.char-prev.off{opacity:.35}
 .char-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
