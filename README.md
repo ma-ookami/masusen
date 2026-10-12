@@ -7,7 +7,16 @@
 
 | ファイル | 役割 |
 |---|---|
-| `index.html` | アプリ本体 |
+| `index.html` | アプリ本体(画面の骨組み。下の css・js を読み込む) |
+| `css/style.css` | 見た目(色・配置・アニメーション) |
+| `js/base.js` | 定数・状態・日付・書き込みの土台 |
+| `js/data.js` | リアルタイム更新・参加グループ・開催ルールと返事の集計 |
+| `js/ui.js` | 返事の保存・シート(下から出る画面) |
+| `js/render.js` | 画面の描画 |
+| `js/events.js` | 画面遷移・ボタンなどの操作 |
+| `js/mascot.js` | ますくん(キャラ) |
+| `js/boot.js` | Firebase との接続・新しい版の確認・テーマ・起動 |
+| `images/` | 確認用の画像(Git にも公開サイトにも入らない) |
 | `firebase-config.js` | Firebase の設定(手順4で貼り付ける)と App Check のキー |
 | `firestore.rules` | データを守るルール(手順3で貼り付ける) |
 | `manifest.webmanifest` | ホーム画面に追加したときのアプリ名・色の設定 |
@@ -15,7 +24,7 @@
 | `README.md` | この手順書 |
 | `OVERVIEW.md` | アプリの概要 |
 
-GitHub にアップロードが必要なのは、`index.html`・`firebase-config.js`・`manifest.webmanifest`・アイコン3つです。`firestore.rules` は Firebase の画面に貼り付けて使います。
+GitHub にアップロードが必要なのは、`index.html`・`css` フォルダ・`js` フォルダ・`firebase-config.js`・`manifest.webmanifest`・アイコン3つです。`firestore.rules` は Firebase の画面に貼り付けて使います。
 
 ---
 
@@ -73,7 +82,7 @@ window.FIREBASE_CONFIG = {
 2. 右上の「+」→「New repository」
 3. Repository name に `masusen` と入れ、**Public** を選んで「Create repository」
 4. 「uploading an existing file」のリンクを押す
-5. `index.html` と `firebase-config.js` をドラッグして置き、下の「Commit changes」を押す
+5. `index.html`・`css` フォルダ・`js` フォルダと `firebase-config.js` をドラッグして置き、下の「Commit changes」を押す
 6. リポジトリの「Settings」→ 左の「Pages」
 7. 「Branch」で `main` と `/ (root)` を選び「Save」
 8. 1〜2分待つと、上に公開URLが出ます
@@ -121,7 +130,7 @@ reCAPTCHA Enterprise(Google Cloud Fraud Defense)を使います。Google Cloud �
    - 保存
 3. **アプリにサイトキーを入れる**
    - `firebase-config.js` の `window.APPCHECK_SITE_KEY = "";` の `""` の中に**サイトキー**を貼る
-   - `index.html` と `firebase-config.js` を GitHub にアップロードする
+   - `index.html`・`css`・`js` と `firebase-config.js` を GitHub にアップロードする
 4. **1日ほど使ってから「適用」する**
    - App Check の「API」タブ →「Cloud Firestore」で、「確認済みのリクエスト」が増えていることを確認する
    - 確認できたら「適用」を押す(「Authentication」も同じように適用できます)
