@@ -78,8 +78,8 @@ function lcdMascot(c){
   return `<svg viewBox="${view}" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${tail}${head}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="${BD}"/><rect x="2" y="3" width="28" height="22" rx="5" fill="${B}"/>
     <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="${SCR}"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}${faceAcc}${noise}</g>${wear}${item}${MASCOT_ZZZ}</svg>`;
 }
-// the row by the option button: three places for members' own characters (mine first, then by join order),
-// then the official one on the right. An empty place is a faint dashed circle that opens the character maker.
+// the row by the option button: the official one on the right, then members' own characters to its left
+// (mine next to it, then by join order, up to three). An empty place is a faint dashed circle that opens the character maker.
 // Each slot is redrawn only when what it shows changes.
 const MASCOT_SLOTS = ["mascot", "mascot2", "mascot3", "mascot4"];
 const OWN_PLACES = 3;
@@ -89,8 +89,9 @@ const PLACE_SVG = `<svg viewBox="0 0 32 34" preserveAspectRatio="xMidYMax meet" 
 function renderMascotRow(){
   const ids = Object.keys(S.gid ? S.members : {}).filter(id => S.members[id].char)
     .sort((a, b) => (b === S.me) - (a === S.me) || S.members[a].joinedAt - S.members[b].joinedAt).slice(0, OWN_PLACES);
-  const list = [...ids.map(id => ({ c:S.members[id].char, who:id }))];
-  while (list.length < OWN_PLACES) list.push({ place:true });
+  // filled from the right: official, then mine, then the others; empty places are on the left
+  const list = ids.map(id => ({ c:S.members[id].char, who:id })).reverse();
+  while (list.length < OWN_PLACES) list.unshift({ place:true });
   list.push({ c:CHAR_PRESETS.antenna, who:null });
   MASCOT_SLOTS.forEach((sid, i) => {
     const el = $(sid), it = list[i];
@@ -114,7 +115,7 @@ function renderMascotRow(){
 // open 設定 → 自分 at the character maker
 function openCharMaker(){
   if ($("setBtn").hidden) return;
-  $("setBtn").click(); showSetTab("me");
+  $("setBtn").click(); showSetTab("me"); setCharOpen(true);
   requestAnimationFrame(() => $("charPreview").closest(".sec").scrollIntoView({ block:"start", behavior:"smooth" }));
 }
 // move -> how long it plays (ms)
@@ -205,7 +206,9 @@ function renderCharMaker(){
         : h("button", { type:"button", class:"chip sm" + (charDraft[k] === v ? " on" : ""), role:"radio", "aria-checked":String(charDraft[k] === v),
             onclick:() => setCharPart(k, v) }, o))))));
   $("charShow").checked = charOn;
-  $("charSave").disabled = !charChanged() || S.canWrite === false;
+  // the save button only shows while there is something to save
+  $("charSave").hidden = !charChanged();
+  $("charSave").disabled = S.canWrite === false;
 }
 function setCharPart(k, v){
   charDraft = { ...charDraft, [k]: v };
@@ -213,6 +216,12 @@ function setCharPart(k, v){
   renderCharMaker();
   mascotDo($("charPreview"), "hop");
 }
+// the parts fold away under 「自分のキャラクターを作る」
+function setCharOpen(open){
+  $("charBody").hidden = !open;
+  $("charOpen").setAttribute("aria-expanded", String(open));
+}
+$("charOpen").addEventListener("click", () => setCharOpen($("charBody").hidden));
 $("charShow").addEventListener("change", e => { charOn = e.target.checked; renderCharMaker(); });
 $("charPreview").addEventListener("click", () => mascotDo($("charPreview"), "hop"));
 $("charReset").addEventListener("click", () => { charDraft = { ...CHAR_DEFAULT }; charOn = true; renderCharMaker(); });

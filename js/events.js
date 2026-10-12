@@ -36,7 +36,7 @@ $("setTabs").addEventListener("click", e => { const b = e.target.closest("button
 showSetTab("me");
 $("setBtn").addEventListener("click", () => {
   S.seen = undefined; if (isCreatorHere()) loadSeen();
-  charDraft = null; renderCharMaker();
+  charDraft = null; renderCharMaker(); setCharOpen(false);
  gPicker.set(S.group); restDraft = [...(S.group.restDays || [])]; renderRestPick(); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("anonBtn").addEventListener("click", () => {

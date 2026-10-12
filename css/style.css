@@ -72,6 +72,11 @@ button{cursor:pointer}
 .char-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .char-side .switch-row{width:100%}
 .char-parts{display:flex;flex-direction:column;gap:8px}
+.char-body{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.char-body .char-parts{align-self:stretch}
+.fold-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800}
+.fold-btn .fold-i{transition:transform .2s}
+.fold-btn[aria-expanded="true"] .fold-i{transform:rotate(180deg)}
 .char-row{display:flex;flex-direction:column;gap:4px}
 .char-row .chips{gap:6px}
 .char-colors{display:flex;flex-wrap:wrap;gap:8px}
