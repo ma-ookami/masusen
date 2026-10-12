@@ -81,14 +81,15 @@ service cloud.firestore {
 
     // ---------- shapes ----------
     function validGroup(d) {
-      return d.keys().hasOnly(['name', 'rule', 'quorum', 'minus', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan'])
+      return d.keys().hasOnly(['name', 'rule', 'quorum', 'minus', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan', 'restDays'])
         && isText(d.name, 1, 24)
         && d.get('rule', 'count') in ['count', 'minus', 'ratio', 'open']
         && intIn(d.get('quorum', 4), 1, 20)
         && intIn(d.get('minus', 1), 0, 19)
         && d.get('ratio', 'half') in ['half', '2of3', '3of4', 'all']
         && intIn(d.get('minOpen', 2), 1, 20)
-        && d.get('showPlan', true) is bool;
+        && d.get('showPlan', true) is bool
+        && (!('restDays' in d) || (d.restDays is list && d.restDays.size() <= 7 && d.restDays.hasOnly([0, 1, 2, 3, 4, 5, 6])));
     }
     function validMember(d) {
       return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape', 'weekly'])
@@ -183,11 +184,14 @@ service cloud.firestore {
 
       match /overrides/{day} {
         allow read: if isMember(gid);
+        // { need, by } = this many is enough that day; { rest } = rest day on/off (no name stored)
         allow create, update: if isMember(gid)
-          && request.resource.data.keys().hasOnly(['need', 'day', 'by', 'at'])
-          && intIn(request.resource.data.need, 1, 20)
+          && request.resource.data.keys().hasOnly(['need', 'day', 'by', 'at', 'rest'])
+          && ('need' in request.resource.data || 'rest' in request.resource.data)
+          && (!('need' in request.resource.data) || intIn(request.resource.data.need, 1, 20))
+          && (!('rest' in request.resource.data) || request.resource.data.rest is bool)
           && request.resource.data.day == day && isDay(day)
-          && actsAs(gid, request.resource.data.by)
+          && (!('by' in request.resource.data) || actsAs(gid, request.resource.data.by))
           && request.resource.data.at is int;
         allow delete: if isMember(gid) || isCreator(gid);
       }

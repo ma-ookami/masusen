@@ -306,6 +306,9 @@ body.fit .members{flex:1;min-height:0;overflow-y:auto;scrollbar-gutter:stable;ov
 .score.skip{background:var(--sky);border-color:var(--sky);box-shadow:0 0 0 3px color-mix(in srgb,var(--sky) 30%,transparent)}
 .score.skip .day b,.score.skip #scoreSub,.score.skip .count .n,.score.skip .count .of,.score.skip .count .u{color:var(--sky-ink)}
 .score.skip.pop{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+.score.rest{background:color-mix(in srgb,var(--sky) 55%,var(--surface));border-color:var(--sky)}
+.score.rest .day b,.score.rest #scoreSub,.score.rest .count .n,.score.rest .count .u{color:var(--sky-ink)}
+.rest-box{display:flex;flex-direction:column;gap:4px}
 .score.held{background:var(--masu);border-color:var(--masu);box-shadow:0 0 0 3px color-mix(in srgb,var(--masu) 30%,transparent),0 0 32px color-mix(in srgb,var(--masu) 30%,transparent)}
 .score.held .day b,.score.held #scoreSub,.score.held .count .n,.score.held .count .of,.score.held .count .u{color:var(--masu-ink)}
 .score.held.soft{background:color-mix(in srgb,var(--masu) 22%,var(--surface));box-shadow:none}
@@ -335,6 +338,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .wd.sel{border:2px solid var(--fg);background:var(--surface-2)}
 .wd.held{background:var(--masu);color:var(--masu-ink);border-color:var(--masu)}
 .wd.skipd{background:var(--sky);color:var(--sky-ink);border-color:var(--sky)}
+.wd.restd{background:color-mix(in srgb,var(--sky) 45%,var(--surface));border-color:var(--sky);border-style:dashed}
+.wd.restd .c,.wd.restd .dn,.wd.restd:not(.today):not(.tmrw) .w{color:var(--sky-ink)}
+.wk.restd{background:var(--sky);border-color:var(--sky)} .wk.restd .wk-v,.wk.restd .wk-d{color:var(--sky-ink)}
 .wd.skipd .c,.wd.skipd .dn,.wd.skipd:not(.today):not(.tmrw) .w{color:var(--sky-ink)}
 .wd.held .c,.wd.held .dn,.wd.held:not(.today):not(.tmrw) .w{color:var(--masu-ink)}
 .wd.held.sel{border-color:var(--fg);box-shadow:0 0 0 2px var(--bg) inset}
@@ -752,6 +758,10 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 <div class="sheet" id="shOverride" hidden><div class="panel" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
   <div class="grab"></div>
   <div class="sh"><h2 id="ovTitle">開催ルール</h2><button class="x" data-close aria-label="閉じる">✕</button></div>
+  <div class="rest-box">
+    <button type="button" class="btn" id="ovRest">💤 この日はお休みにする</button>
+    <p class="rule-hint" id="ovRestHint">メンバーならだれでも決められます。決めた人の名前は出ません。</p>
+  </div>
   <dl class="ov-info">
     <dt>いつものルール</dt><dd id="ovUsual"></dd>
     <dt>この日</dt><dd id="ovToday"></dd>
@@ -817,6 +827,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
   <div class="sec box" data-tab="group">
     <h3 class="box-h">開催のルール</h3>
     <div id="gRule" class="stack"></div>
+    <span class="label" style="margin-top:6px">毎週お休みの曜日</span>
+    <div class="weekly rest-pick" id="restPick" role="group" aria-label="毎週お休みの曜日"></div>
+    <p class="rule-hint" style="margin:0">選んだ曜日はお休みになります(祝日は除く)。その日だけやるときは、カードをタップして変えられます。</p>
     <button type="button" class="btn primary" id="ruleSave" disabled>ルールを保存</button>
   </div>
   <div class="sec box" data-tab="group">
@@ -983,6 +996,15 @@ function cleanRule(d){
   return { rule, quorum:clamp(d && d.quorum, 1, 20, 4), minus:clamp(d && d.minus, 0, 19, 1),
     ratio:RATIOS[d && d.ratio] ? d.ratio : "half", minOpen:clamp(d && d.minOpen, 1, 20, 2) };
 }
+// weekdays that are always rest days (0 = Sunday)
+const cleanRestDays = v => Array.isArray(v) ? [...new Set(v.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort() : [];
+// a day's own setting: { need } = this many is enough, { rest:true } = rest day, { rest:false } = play despite the weekly rest day
+function cleanOv(d){
+  if (!d) return null;
+  const need = clamp(d.need, 1, 20, null), rest = typeof d.rest === "boolean" ? d.rest : null;
+  if (need) return { need };
+  return rest == null ? null : { rest };
+}
 // "メンバー数に合わせる": everyone minus a few, never below one
 const minusNeed = (minus, n) => Math.max(1, n - minus);
 function linkFor(gid){ return SHARE_BASE + "#" + gid; }
@@ -1064,7 +1086,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.onSnapshot(snap => {
     if (S.gid !== gid) return;
     const d = snap.exists ? snap.data() : null;
-    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), showPlan: d.showPlan !== false, createdBy: str(d.createdBy,200) } : null;
+    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), restDays:cleanRestDays(d.restDays), showPlan: d.showPlan !== false, createdBy: str(d.createdBy,200) } : null;
     if (!snap.metadata.fromCache || d) S.groupLoaded = true; else settle("groupLoaded");
     render();
   }, onSubError));
@@ -1122,7 +1144,7 @@ function subscribeAnswers(){
   });
   watch("overrides", snap => {
     const o = {};
-    snap.docs.forEach(doc => { const n = clamp(doc.data() && doc.data().need, 1, 20, null); if (n) o[doc.id] = n; });
+    snap.docs.forEach(doc => { const c = cleanOv(doc.data()); if (c) o[doc.id] = c; });
     S.overrides = o;
   });
   ansUnsub = S.db.collection(`groups/${gid}/answers`).where("day", ">=", from).onSnapshot(snap => {
@@ -1198,9 +1220,17 @@ function ruleText(r, n){
   if (r.rule === "ratio") return `メンバーの${RATIOS[r.ratio].label}で開催` + (n ? `(${n}人中${Math.max(1, RATIOS[r.ratio].need(n))}人)` : "");
   return `集まった人でやる(${r.minOpen}人から)`;
 }
+const weeklyRestOn = day => !isHoliday(day) && (S.group.restDays || []).includes(parseDay(day).getUTCDay());
 function needFor(day, ovs = S.overrides){
+  const o = ovs[day] || {};
+  const weekly = weeklyRestOn(day);
+  if (o.rest === true || (weekly && !o.need && o.rest !== false)) return { rest:true, weekly: o.rest !== true, need:Infinity, open:true, tag:"お休み" };
+  if (o.need) return { need:o.need, open:true, override:true, tag:`この日だけ${o.need}人でやる` };
+  return usualRule();
+}
+// the group's rule, ignoring rest days and one-day settings
+function usualRule(){
   const n = Object.keys(S.members).length, g = S.group;
-  if (ovs[day]) return { need:ovs[day], open:true, override:true, tag:`この日だけ${ovs[day]}人でやる` };
   if (g.rule === "minus"){ const need = minusNeed(g.minus, n); return { need, tag:`${n}人中${need}人で開催` }; }
   if (g.rule === "ratio"){ const need = Math.max(1, RATIOS[g.ratio].need(n)); return { need, tag:`${n}人中${need}人で開催` }; }
   if (g.rule === "open") return { need:g.minOpen, open:true, tag:`集まった人でやる・${g.minOpen}人から` };
@@ -1591,25 +1621,27 @@ function renderMain(){
       h("span", { class:"dow-pill", style:`--c:var(--wd${isHoliday(day) ? 0 : w})`, text:DOW[w] }),
       ...(day === S.day && lateNight() ? [h("span", { class:"late", text:"(🔄朝4時)" })] : []));
   }
-  $("masuN").textContent = masuN; $("needN").textContent = rule.need;
+  $("masuN").textContent = masuN; $("needN").textContent = rule.rest ? "" : rule.need;
   $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
   $("unitN").textContent = rule.open ? "人がます" : "ます";
   const rest = rule.need - masuN;
-  const fest = masuN >= rule.need && masuN > 0;
+  const fest = !rule.rest && masuN >= rule.need && masuN > 0;
   const dayWord = day === S.day ? "今日" : day === addDays(S.day, 1) ? "明日" : "この日";
   // everyone has answered and even the maybes can't make it: the day is off
-  const skip = !fest && ids.length > 0 && ids.every(id => today[id]) && masuN + tabunN < rule.need;
+  const skip = !fest && !rule.rest && ids.length > 0 && ids.every(id => today[id]) && masuN + tabunN < rule.need;
   let status;
-  if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
+  if (rule.rest) status = `💤 ${dayWord}はお休み・返事しなくて大丈夫`;
+  else if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
   else if (skip) status = `⏭ ${dayWord}は開催スキップです!`;
   else if (rule.override) status = `${dayWord}だけ${rule.need}人でOK・あと${rest}人`;
   else if (rule.open) status = `${rule.need}人いればやる・あと${rest}人`;
   else status = `あと${rest}人で開催`;
-  $("scoreSub").textContent = status + (tabunN && !skip ? `・たぶん${tabunN}人` : "");
+  $("scoreSub").textContent = status + (tabunN && !skip && !rule.rest ? `・たぶん${tabunN}人` : "");
   const card = $("scoreCard"), wasHeld = card.classList.contains("held"), wasSkip = card.classList.contains("skip");
   card.classList.toggle("held", fest);
   card.classList.toggle("soft", fest && !!rule.open);
   card.classList.toggle("skip", skip);
+  card.classList.toggle("rest", !!rule.rest);
   setMascotMood(lateNight() ? "sleep" : fest ? "happy" : skip ? "sad" : "");
   if ((fest && !wasHeld) || (skip && !wasSkip)){ card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); }
   if (S.ansReady){
@@ -1622,16 +1654,16 @@ function renderMain(){
     const n = masuCount(d), r = needFor(d), held = n >= r.need && n > 0, my = mineOn(d);
     const ad = answersFor(d), mids = Object.keys(S.members);
     const tb = mids.filter(id => ad[id] && ad[id].status === "tabun").length;
-    const skipped = !held && mids.length > 0 && mids.every(id => ad[id]) && n + tb < r.need;
+    const skipped = !held && !r.rest && mids.length > 0 && mids.every(id => ad[id]) && n + tb < r.need;
     const t = parseDay(d);
     const wdN = t.getUTCDay();
-    return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : skipped ? " skipd" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),
-        "aria-label": `${dayLabel(d)} ます${n}人` + (held ? " 開催" : skipped ? " 見送り" : "") + (my ? ` 自分は${STATUSES[my.status].label}` : " 自分は未回答"),
+    return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : skipped ? " skipd" : r.rest ? " restd" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),
+        "aria-label": `${dayLabel(d)} ます${n}人` + (held ? " 開催" : skipped ? " 見送り" : r.rest ? " お休み" : "") + (my ? ` 自分は${STATUSES[my.status].label}` : " 自分は未回答"),
         onclick: () => { S.sel = d; planEditing = false; render(); } },
       S.overrides[d] ? h("span", { class:"ov" }) : null,
       h("span", { class:"w", text: i === 0 ? "今日" : i === 1 ? "明日" : DOW[t.getUTCDay()] }),
       h("span", { class:"dn", text: t.getUTCDate() }),
-      h("span", { class:"c", text: held ? "★開催" : skipped ? "見送り" : n ? `◎${n}` : "" }));
+      h("span", { class:"c", text: held ? "★開催" : skipped ? "見送り" : r.rest ? "休み" : n ? `◎${n}` : "" }));
   }));
 
   // buttons
@@ -1782,7 +1814,13 @@ function renderSheets(){
     const ov = S.overrides[day];
     $("ovTitle").textContent = `${dayLabel(day)}の開催ルール`;
     $("ovUsual").textContent = ruleText(S.group, Object.keys(S.members).length);
-    $("ovToday").textContent = ov ? `この日だけ${ov}人いればやる` : "いつものルールどおり";
+    const r = needFor(day), weekly = weeklyRestOn(day);
+    $("ovToday").textContent = r.rest ? (r.weekly ? "お休み(毎週のお休み)" : "お休み")
+      : ov && ov.need ? `この日だけ${ov.need}人いればやる`
+      : weekly ? "毎週のお休みの日だけど、この日はやる" : "いつものルールどおり";
+    $("ovRest").textContent = r.rest ? (r.weekly ? "▶ この日はやる" : "▶ お休みをやめる") : "💤 この日はお休みにする";
+    $("ovRest").classList.toggle("primary", !!r.rest);
+    $("ovRest").disabled = S.canWrite === false;
     $("ovReset").hidden = !ov;
     $("ovSave").disabled = S.canWrite === false;
   }
@@ -1851,7 +1889,7 @@ async function renderCal(){
       const snap = await withRetry(() => S.db.collection(`groups/${S.gid}/answers`).where("month", "==", ym).get());
       const ovSnap = await withRetry(() => S.db.collection(`groups/${S.gid}/overrides`).where("day", ">=", ym + "-01").where("day", "<=", ym + "-31").get());
       const o = {};
-      ovSnap.docs.forEach(doc => { const n = clamp(doc.data() && doc.data().need, 1, 20, null); if (n) o[doc.id] = n; });
+      ovSnap.docs.forEach(doc => { const c = cleanOv(doc.data()); if (c) o[doc.id] = c; });
       S.monthCache[ym] = { list: snap.docs.map(d => cleanAnswer(d.data())).filter(Boolean), ovs: o };
     } catch { $("cal").replaceChildren(h("div", { style:"grid-column:1/-1", class:"muted", text:"読み込めませんでした。閉じてもう一度開いてください" })); return; }
     if (S.calMonth !== ym || !isOpen("shCal")) return;
@@ -1879,11 +1917,11 @@ async function renderCal(){
   for (let i = 0; i < first; i++) cells.push(h("div", { class:"d pad" }));
   let held = 0;
   for (let d = 1; d <= days; d++){
-    const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, isHeld = n > 0 && n >= needFor(key, ovs).need;
+    const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, rr = needFor(key, ovs), isHeld = n > 0 && n >= rr.need;
     if (isHeld) held++;
     const wd = (first + d - 1) % 7;
     cells.push(h("div", { class: "d" + (isHeld ? " held" : "") + (key === S.day ? " today" : "") + (isHoliday(key) || wd === 0 ? " hol" : wd === 6 ? " sat" : "") },
-      String(d), n ? h("small", { text: isHeld ? "開催" : `◎${n}` }) : null));
+      String(d), rr.rest ? h("small", { text:"休み" }) : n ? h("small", { text: isHeld ? "開催" : `◎${n}` }) : null));
   }
   $("cal").replaceChildren(...cells);
   $("calLegend").textContent = `開催 ${held}日・◎は「ます」の人数・いまのルール(${ruleText(S.group, Object.keys(S.members).length)})で判定`;
@@ -1924,7 +1962,7 @@ function showSetTab(t){
 $("setTabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) showSetTab(b.dataset.t); });
 showSetTab("me");
 $("setBtn").addEventListener("click", () => {
- gPicker.set(S.group); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
+ gPicker.set(S.group); restDraft = [...(S.group.restDays || [])]; renderRestPick(); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("anonBtn").addEventListener("click", () => {
   S.anon = !S.anon;
@@ -2104,16 +2142,27 @@ $("gNameForm").addEventListener("submit", async e => {
 });
 // a burst of +/− taps becomes one write
 // the save button lights up only when the picked rule differs from the saved one
+let restDraft = [];
+function renderRestPick(){
+  $("restPick").replaceChildren(...DOW.map((dn, i) => h("button", { type:"button", "aria-pressed":String(restDraft.includes(i)),
+    class:"wk" + (restDraft.includes(i) ? " restd" : " none") + (i === 0 ? " sun" : i === 6 ? " sat" : ""),
+    onclick:() => { restDraft = restDraft.includes(i) ? restDraft.filter(x => x !== i) : [...restDraft, i].sort(); renderRestPick(); updateRuleSave(); } },
+    h("span", { class:"wk-d", text:dn }), h("span", { class:"wk-v", text: restDraft.includes(i) ? "休" : "ー" }))));
+}
 function ruleChanged(){
   const r = gPicker.get(), g = S.group;
-  return !!g && !(r.rule === g.rule && r.quorum === g.quorum && r.minus === g.minus && r.ratio === g.ratio && r.minOpen === g.minOpen);
+  return !!g && !(r.rule === g.rule && r.quorum === g.quorum && r.minus === g.minus && r.ratio === g.ratio && r.minOpen === g.minOpen
+    && restDraft.join() === (g.restDays || []).join());
 }
 function updateRuleSave(){ $("ruleSave").disabled = !ruleChanged(); }
 $("ruleSave").addEventListener("click", async () => {
   if (!ruleChanged()) return;
-  const r = gPicker.get();
+  const r = { ...gPicker.get(), restDays:[...restDraft] };
   $("ruleSave").disabled = true;
-  try { await withRetry(() => S.db.doc("groups/" + S.gid).update(r)); S.group = { ...S.group, ...r }; render(); toast("保存しました:" + ruleText(r, Object.keys(S.members).length)); }
+  try {
+    await withRetry(() => S.db.doc("groups/" + S.gid).update(r)); S.group = { ...S.group, ...r }; render();
+    toast("保存しました:" + ruleText(r, Object.keys(S.members).length) + (r.restDays.length ? `・毎週${r.restDays.map(i => DOW[i]).join("")}はお休み` : ""));
+  }
   catch (err){ onWriteError(err); updateRuleSave(); }
 });
 $("switchBtn").addEventListener("click", () => go(null));
@@ -2290,16 +2339,26 @@ function clearMine(msg){
 let ovN = 2;
 const ovMax = () => Math.max(1, Object.keys(S.members).length || 20);
 const setOv = v => { ovN = Math.max(1, Math.min(ovMax(), v)); $("ovN").textContent = ovN; $("ovMinus").disabled = ovN <= 1; $("ovPlus").disabled = ovN >= ovMax(); };
-function openRuleSheet(){ setOv(S.overrides[S.sel] || Math.max(1, needFor(S.sel).need - 1)); openSheet("shOverride"); }
+function openRuleSheet(){ setOv((S.overrides[S.sel] || {}).need || Math.max(1, usualRule().need - 1)); openSheet("shOverride"); }
 $("scoreCard").addEventListener("click", openRuleSheet);
 $("scoreCard").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openRuleSheet(); } });
 $("ovMinus").addEventListener("click", () => setOv(ovN - 1));
 $("ovPlus").addEventListener("click", () => setOv(ovN + 1));
 $("ovSave").addEventListener("click", async () => {
   const day = S.sel;
-  S.overrides = { ...S.overrides, [day]: ovN }; closeSheets(); render();
+  S.overrides = { ...S.overrides, [day]: { need:ovN } }; closeSheets(); render();
   await writeDoc(S.db.doc(`groups/${S.gid}/overrides/${day}`), { need:ovN, day, by:S.me, at:Date.now() });
   toast(`${relLabel(day)}は${ovN}人でやることにしました`);
+});
+// rest day on / off. Nobody's id is stored with it.
+$("ovRest").addEventListener("click", async () => {
+  const day = S.sel, r = needFor(day), weekly = weeklyRestOn(day), ref = S.db.doc(`groups/${S.gid}/overrides/${day}`);
+  const o = { ...S.overrides };
+  if (r.rest && !weekly){ delete o[day]; S.overrides = o; closeSheets(); render(); await writeDoc(ref, null); toast(`${relLabel(day)}のお休みをやめました`); return; }
+  const rest = !r.rest;   // weekly rest day -> play (rest:false); normal day -> rest
+  o[day] = { rest }; S.overrides = o; closeSheets(); render();
+  await writeDoc(ref, { rest, day, at:Date.now() });
+  toast(rest ? `${relLabel(day)}はお休みにしました` : `${relLabel(day)}はやることにしました`);
 });
 $("ovReset").addEventListener("click", async () => {
   const day = S.sel, o = { ...S.overrides }; delete o[day]; S.overrides = o; closeSheets(); render();
