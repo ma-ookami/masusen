@@ -2314,7 +2314,7 @@ $("calNext").addEventListener("click", () => { S.calMonth = shiftMonth(S.calMont
 // LCD: a yellow frame with a dark screen; the face glows. head: "antenna" or "signal"
 const MASCOT_HEADS = {
   antenna: `<g class="ant"><rect x="15.2" y="0.8" width="1.6" height="4.5" fill="var(--masu-deep)"/><circle class="bulb" cx="16" cy="1.3" r="1.9"/></g>`,
-  cat: `<path class="tail" d="M28 27 Q34.5 27 34 20 Q33.8 16.5 31.5 16" fill="none" stroke="var(--masu-deep)" stroke-width="2.4" stroke-linecap="round"/>
+  cat: `<path class="tail" d="M28 27 Q34.5 27 34.5 20.5 Q34.5 17 35.5 15" fill="none" stroke="var(--masu-deep)" stroke-width="2.4" stroke-linecap="round"/>
     <g class="ear earL"><path d="M3.5 9 L5.5 0.8 L12.5 5.5 Z" fill="var(--masu)"/><path d="M5.6 6.5 L6.6 3 L9.6 5.2 Z" fill="#ff8a7a"/></g>
     <g class="ear earR"><path d="M28.5 9 L26.5 0.8 L19.5 5.5 Z" fill="var(--masu)"/><path d="M26.4 6.5 L25.4 3 L22.4 5.2 Z" fill="#ff8a7a"/></g>`,
   headphones: `<g class="ant antL"><path d="M10.5 7 L7.5 -1.5" stroke="var(--masu-deep)" stroke-width="1.5" stroke-linecap="round"/><circle class="bulb" cx="7.3" cy="-2" r="1.6"/></g>
@@ -2363,7 +2363,25 @@ $("mascot3").innerHTML = lcdMascot("cat");
 const MASCOT_MS = { twitch:700, blink:300, hop:750, wiggle:600, spin:700, look:1700, glitch:400, groove:1800, yawn:1800, tilt:1100, nod:900 };
 const MASCOT_MOVES = Object.keys(MASCOT_MS);
 const mascots = () => [$("mascot"), $("mascot2"), $("mascot3")];
-function setMascotMood(m){ mascots().forEach(el => ["happy", "sad", "sleep"].forEach(k => el.classList.toggle(k, k === m))); }
+let mascotMood = "";
+function setMascotMood(m){
+  mascotMood = m;
+  mascots().forEach(el => { const mm = el._nap ? "sleep" : m; ["happy", "sad", "sleep"].forEach(k => el.classList.toggle(k, k === mm)); });
+}
+// naps: one at a time, 40-90s; wake on tap
+function mascotNap(el){
+  el._nap = true; setMascotMood(mascotMood);
+  el._napT = setTimeout(() => mascotWake(el), 40000 + Math.random() * 50000);
+}
+function mascotWake(el){
+  if (!el._nap) return;
+  el._nap = false; clearTimeout(el._napT); setMascotMood(mascotMood);
+  mascotDo(el, "hop");
+}
+function napChance(){
+  const h = new Date(Date.now() + 9 * 3600e3).getUTCHours();
+  return (h >= 13 && h < 16) || (h >= 17 && h < 19) ? .12 : .03;   // 昼寝 and 夕寝 time
+}
 function mascotDo(el, move, cheer){
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   clearTimeout(el._mt);
@@ -2385,13 +2403,21 @@ function mascotReact(status){
   mascots().forEach((el, i) => setTimeout(() => mascotDo(el, move, status === "masu"), i * 130));
 }
 mascots().forEach(el => {
-  el.addEventListener("click", () => { try { navigator.vibrate && navigator.vibrate(10); } catch {} mascotDo(el, el.classList.contains("sleep") ? "wiggle" : "hop"); });
+  el.addEventListener("click", () => {
+    try { navigator.vibrate && navigator.vibrate(10); } catch {}
+    if (el._nap) return mascotWake(el);
+    mascotDo(el, el.classList.contains("sleep") ? "wiggle" : "hop");
+  });
 });
 (function idle(last){
   setTimeout(() => {
     const pick = mascots().filter(el => el !== last);
     const el = pick[Math.floor(Math.random() * pick.length)];
-    if (!document.hidden && el.offsetParent) mascotDo(el, mascotIdleMove(el));
+    if (!document.hidden && el.offsetParent){
+      const napping = mascots().some(m => m._nap);
+      if (!napping && !el.classList.contains("sleep") && Math.random() < napChance()) mascotNap(el);
+      else mascotDo(el, mascotIdleMove(el));
+    }
     idle(el);
   }, 5000 + Math.random() * 2000);
 })(null);
