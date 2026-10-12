@@ -367,6 +367,9 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .reload-btn .ri svg{display:block;width:100%;height:100%}
 .reload-btn.spin .ri{animation:sp .6s linear infinite}
 .opt-btn{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:4px 12px;font-size:13px;font-weight:800;color:var(--muted)}
+.opt-btn:disabled{opacity:.55;cursor:default}
+.opt-btn.on{border-style:solid;border-color:color-mix(in srgb,var(--muted) 70%,var(--line));background:var(--surface);cursor:pointer}
+.opt-btn.on:active{transform:scale(.96)}
 
 /* chips */
 .chips{display:flex;flex-wrap:wrap;gap:8px}

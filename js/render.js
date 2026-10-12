@@ -152,14 +152,13 @@ function renderMain(){
   const myUsual = !rawMine(day) && S.me ? (weeklyOf(S.me, day) || {}).status || null : null;
   box.querySelectorAll(".ans").forEach(b => b.classList.toggle("sel", (!!me && me.status === b.dataset.s) || myUsual === b.dataset.s));
   const line = $("mineLine"); line.replaceChildren();
-  if (me){
-    const bits = detailText(me);
-    line.append(h("button", { class:"opt-btn", onclick:() => openSheet("shDetail") }, bits ? "オプションを変える" : (me.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)")));
-  } else if (myUsual && S.canWrite !== false){
-    const u = weeklyOf(S.me, day);
-    line.append(h("button", { class:"opt-btn", onclick:() => { saveMine({ status:u.status, conds:[...u.conds] }, day); openSheet("shDetail"); } },
-      u.status === "sen" ? "+ タグ・ひとこと" : "+ オプション(時間・条件・ゲーム)"));
-  }
+  // always there; it lights up (solid border) once there is an answer to add tags to
+  const usualAns = !me && myUsual && S.canWrite !== false ? weeklyOf(S.me, day) : null;
+  const canOpt = !!me || !!usualAns;
+  line.append(h("button", { type:"button", class:"opt-btn" + (canOpt ? " on" : ""), disabled:!canOpt,
+    title: canOpt ? "" : "先に返事を選んでください",
+    onclick:() => { if (usualAns) saveMine({ status:usualAns.status, conds:[...usualAns.conds] }, day); openSheet("shDetail"); } },
+    me && detailText(me) ? "返事のタグを変える" : "+ 返事にタグを追加"));
   const wkSt = S.me ? (weeklyOf(S.me, day) || {}).status || null : null;
   const wkName = wkSt ? `毎週の「${STATUSES[wkSt].label}」` : "";
   const myRaw = rawMine(day);
