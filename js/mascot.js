@@ -78,11 +78,11 @@ function lcdMascot(c){
   return `<svg viewBox="${view}" preserveAspectRatio="xMidYMax meet" aria-hidden="true">${tail}${head}<g transform="translate(0 2)"><rect x="2" y="7" width="28" height="22" rx="5" fill="${BD}"/><rect x="2" y="3" width="28" height="22" rx="5" fill="${B}"/>
     <rect x="5.5" y="6" width="21" height="15.5" rx="2.5" fill="${SCR}"/>${lines}${Object.entries(faces).map(([k, f]) => `<g class="f f-${k}">${f}</g>`).join("")}${faceAcc}${noise}</g>${wear}${item}${MASCOT_ZZZ}</svg>`;
 }
-// the row by the option button: two places for members' own characters (mine first, then by join order),
+// the row by the option button: three places for members' own characters (mine first, then by join order),
 // then the official one on the right. An empty place is a faint dashed circle that opens the character maker.
 // Each slot is redrawn only when what it shows changes.
-const MASCOT_SLOTS = ["mascot", "mascot2", "mascot3"];
-const OWN_PLACES = 2;
+const MASCOT_SLOTS = ["mascot", "mascot2", "mascot3", "mascot4"];
+const OWN_PLACES = 3;
 const PLACE_SVG = `<svg viewBox="0 0 32 34" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
   <circle cx="16" cy="19" r="12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 2.4"/>
   <path d="M16 15 V23 M12 19 H20" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;
