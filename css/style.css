@@ -427,6 +427,8 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .by-line .lbl{font-size:12px;color:var(--muted);font-weight:700}
 .chip.with-av{display:inline-flex;align-items:center;gap:6px;padding-left:6px}
 .mlist li .who{display:flex;align-items:center;gap:8px;min-width:0}
+.mlist li .who-t{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.mlist li .seen{font-size:11px;font-weight:600;color:var(--muted)}
 .mem .meta{grid-column:1/-1;font-size:12px;color:var(--muted);overflow-wrap:anywhere;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:3px}
 .mtag{display:inline-block;padding:1px 9px;border-radius:999px;font-size:11px;font-weight:700;line-height:1.5;color:var(--fg);border:1.5px solid color-mix(in srgb,var(--fg) 55%,transparent);background:transparent}
 .mtag.time{background:var(--fg);color:var(--bg);border-color:var(--fg)}

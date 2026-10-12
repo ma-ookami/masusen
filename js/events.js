@@ -35,6 +35,7 @@ function showSetTab(t){
 $("setTabs").addEventListener("click", e => { const b = e.target.closest("button[data-t]"); if (b) showSetTab(b.dataset.t); });
 showSetTab("me");
 $("setBtn").addEventListener("click", () => {
+  S.seen = undefined; if (isCreatorHere()) loadSeen();
  gPicker.set(S.group); restDraft = [...(S.group.restDays || [])]; renderRestPick(); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("anonBtn").addEventListener("click", () => {
@@ -270,7 +271,7 @@ async function leaveGroup(gid, mid){
   stopSubs();
   // my link proves who I am on a re-entered browser, so it goes last, together with my record
   await S.db.deleteMany(answers);
-  await S.db.deleteMany([`groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`, `groups/${gid}/links/${S.uid}`]);
+  await S.db.deleteMany([`groups/${gid}/seen/${mid}`, `groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`, `groups/${gid}/links/${S.uid}`]);
 }
 // two taps: the first arms the button, the second (within 5 s) deletes
 let delArmed = null;
@@ -305,10 +306,18 @@ function isCreatorHere(){
   if (c === S.uid) return true;
   return S.linkMid === c && S.linkVerified && !!(S.members[c] && S.members[c].hasPin);
 }
+function seenText(id){
+  if (id === S.me) return "いま開いています";
+  if (S.seen === undefined) return "読み込み中…";
+  if (S.seen === null) return "";
+  const t = S.seen[id];
+  return t ? `最後に開いた:${agoText(t)}` : "最後に開いた:記録なし";
+}
 function renderMemManage(){
   const ids = Object.keys(S.members).sort((a, b) => S.members[a].joinedAt - S.members[b].joinedAt);
   $("memManage").replaceChildren(...ids.map(id => h("li", null,
-    h("span", { class:"who" }, avatar(id, S.members[id].name), h("span", { text: S.members[id].name + (id === S.me ? "(あなた)" : "") })),
+    h("span", { class:"who" }, avatar(id, S.members[id].name),
+      h("span", { class:"who-t" }, h("span", { text: S.members[id].name + (id === S.me ? "(あなた)" : "") }), h("small", { class:"seen", text:seenText(id) }))),
     id === S.me ? null : h("button", { type:"button", class:"rm" + (rmArmed === id ? " armed" : ""), onclick:() => removeMember(id) }, rmArmed === id ? "本当に外す" : "外す"))));
 }
 async function removeMember(mid){
@@ -325,7 +334,7 @@ async function removeMember(mid){
     ans.docs.forEach(d => paths.push(`groups/${gid}/answers/${d.id}`));
     const links = await withRetry(() => S.db.collection(`groups/${gid}/links`).where("mid", "==", mid).get());
     links.docs.forEach(d => paths.push(`groups/${gid}/links/${d.id}`));
-    paths.push(`groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`);
+    paths.push(`groups/${gid}/seen/${mid}`, `groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`);
     await S.db.deleteMany(paths);
     toast(`${name}をグループから外しました`);
   } catch (err){ onWriteError(err); }
@@ -334,7 +343,7 @@ async function removeMember(mid){
 async function deleteGroup(gid){
   stopSubs();
   const paths = [];
-  for (const sub of ["answers", "overrides", "plans", "links", "members"]){
+  for (const sub of ["answers", "overrides", "plans", "seen", "links", "members"]){
     const snap = await withRetry(() => S.db.collection(`groups/${gid}/${sub}`).get());
     snap.docs.forEach(d => paths.push(`groups/${gid}/${sub}/${d.id}`));
     // passcodes can't be listed; remove one per member (members come last, so this runs before them)

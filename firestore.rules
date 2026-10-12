@@ -196,6 +196,14 @@ service cloud.firestore {
         allow delete: if isMember(gid) || isCreator(gid);
       }
 
+      // when each member last opened the group: written by that member, read only by the creator
+      match /seen/{mid} {
+        allow read: if isCreator(gid);
+        allow create, update: if actsAs(gid, mid) && isMember(gid)
+          && request.resource.data.keys().hasOnly(['at']) && request.resource.data.at is int;
+        allow delete: if actsAs(gid, mid) || isCreator(gid);
+      }
+
       match /plans/{day} {
         allow read: if isMember(gid);
         allow create, update: if isMember(gid)

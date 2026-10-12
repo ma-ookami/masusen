@@ -52,6 +52,8 @@ async function pageChanged(){
   try { const now = await fetchSig(); return !!(pageSig && now && now !== pageSig); } catch { return false; }
 }
 
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("sMain").hidden) markSeen(); });
+
 // ---------- theme ----------
 function applyTheme(){
   const t = ls.get("theme", "auto");

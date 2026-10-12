@@ -42,6 +42,7 @@ function render(){
   if (!ansUnsub && S.deniedFor !== S.me) subscribeAnswers();
   inGroup(true);
   rememberGroup(S.gid, S.group.name);
+  markSeen();
   renderMain(); renderSheets();
   show("sMain");
 }

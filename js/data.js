@@ -145,6 +145,25 @@ function forgetGroup(id){
   ls.set("groups", S.myGroups);
   if (S.uid && S.canWrite !== false) writeDoc(S.db.doc(`users/${S.uid}`), userDoc());
 }
+// note that I opened this group; only the creator can read these. Quietly skipped if it can't be saved.
+const SEEN_EVERY = 30 * 60e3;
+function markSeen(){
+  if (!S.gid || !S.me || !S.db) return;
+  const k = `seen.${S.gid}.${S.me}`;
+  if (Date.now() - ls.get(k, 0) < SEEN_EVERY) return;
+  ls.set(k, Date.now());
+  S.db.doc(`groups/${S.gid}/seen/${S.me}`).set({ at:Date.now() }).catch(() => ls.set(k, 0));
+}
+// creator only: when each member last opened the group
+async function loadSeen(){
+  const gid = S.gid;
+  try {
+    const snap = await S.db.collection(`groups/${gid}/seen`).get();
+    if (S.gid !== gid) return;
+    S.seen = Object.fromEntries(snap.docs.map(d => [d.id, num(d.data() && d.data().at) || 0]));
+  } catch { S.seen = null; }
+  if (isOpen("shSet")) renderMemManage();
+}
 function rememberGroup(id, name){
   const i = S.myGroups.findIndex(g => g.id === id);
   if (i >= 0 && S.myGroups[i].name === name) return;
