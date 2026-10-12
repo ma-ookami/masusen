@@ -23,6 +23,15 @@ service cloud.firestore {
     function pinPath(gid, mid) { return /databases/$(database)/documents/groups/$(gid)/pins/$(mid); }
     function linkPath(gid) { return /databases/$(database)/documents/groups/$(gid)/links/$(request.auth.uid); }
     function hasLink(gid) { return exists(linkPath(gid)); }
+    function movePath(gid, t) { return /databases/$(database)/documents/groups/$(gid)/moves/$(t); }
+    // a move ticket (left by the same member's browser at the old URL, less than a day ago) for this member
+    function moveOk(gid, d) {
+      return d.get('move', '') is string && d.get('move', '').size() >= 20
+        && exists(movePath(gid, d.get('move', '')))
+        && get(movePath(gid, d.get('move', ''))).data.mid == d.mid
+        && get(movePath(gid, d.get('move', ''))).data.at > request.time.toMillis() - 86400000;
+    }
+    function moveVerified(gid, d) { return moveOk(gid, d) && get(movePath(gid, d.get('move', ''))).data.verified == true; }
     // this browser acts as member <mid>: it joined as that member, or linked itself to it
     function actsAs(gid, mid) {
       return signedIn() && (mid == request.auth.uid || (hasLink(gid) && get(linkPath(gid)).data.mid == mid));
@@ -153,22 +162,26 @@ service cloud.firestore {
         allow list: if isCreator(gid);
         // linking (or switching) to a member needs that member's passcode, if they set one
         // "verified" can only be set by sending the right passcode (or kept for the same member)
+        // ...or a move ticket from the old URL, which counts like the passcode
         allow create: if signedIn() && lid == request.auth.uid
-          && request.resource.data.keys().hasOnly(['mid', 'at', 'pin', 'verified'])
+          && request.resource.data.keys().hasOnly(['mid', 'at', 'pin', 'verified', 'move'])
           && isText(request.resource.data.mid, 1, 128)
           && request.resource.data.at is int
           && exists(memberPath(gid, request.resource.data.mid))
-          && pinOk(gid, request.resource.data.mid, request.resource.data)
-          && (request.resource.data.get('verified', false) == false
-              || pinGiven(gid, request.resource.data.mid, request.resource.data));
-        allow update: if signedIn() && lid == request.auth.uid
-          && request.resource.data.keys().hasOnly(['mid', 'at', 'pin', 'verified'])
-          && isText(request.resource.data.mid, 1, 128)
-          && request.resource.data.at is int
-          && exists(memberPath(gid, request.resource.data.mid))
-          && (request.resource.data.mid == resource.data.mid || pinOk(gid, request.resource.data.mid, request.resource.data))
+          && (pinOk(gid, request.resource.data.mid, request.resource.data) || moveOk(gid, request.resource.data))
           && (request.resource.data.get('verified', false) == false
               || pinGiven(gid, request.resource.data.mid, request.resource.data)
+              || moveVerified(gid, request.resource.data));
+        allow update: if signedIn() && lid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['mid', 'at', 'pin', 'verified', 'move'])
+          && isText(request.resource.data.mid, 1, 128)
+          && request.resource.data.at is int
+          && exists(memberPath(gid, request.resource.data.mid))
+          && (request.resource.data.mid == resource.data.mid || pinOk(gid, request.resource.data.mid, request.resource.data)
+              || moveOk(gid, request.resource.data))
+          && (request.resource.data.get('verified', false) == false
+              || pinGiven(gid, request.resource.data.mid, request.resource.data)
+              || moveVerified(gid, request.resource.data)
               || (resource.data.get('verified', false) == true && resource.data.mid == request.resource.data.mid));
         allow delete: if (signedIn() && lid == request.auth.uid) || isCreator(gid);
       }
@@ -202,6 +215,22 @@ service cloud.firestore {
         allow create, update: if actsAs(gid, mid) && isMember(gid)
           && request.resource.data.keys().hasOnly(['at']) && request.resource.data.at is int;
         allow delete: if actsAs(gid, mid) || isCreator(gid);
+      }
+
+      // move tickets: made by a member's browser at the old URL, used once at the new URL.
+      // The ticket id is a long random secret, so knowing it is what lets the new page read and use it.
+      match /moves/{t} {
+        allow get: if signedIn() && t.size() >= 20;
+        allow list: if isCreator(gid);
+        allow create: if signedIn() && t.size() >= 20
+          && request.resource.data.keys().hasOnly(['mid', 'at', 'verified'])
+          && isText(request.resource.data.mid, 1, 128)
+          && request.resource.data.at is int
+          && request.resource.data.verified is bool
+          && actsAs(gid, request.resource.data.mid)
+          && (request.resource.data.verified == false || request.resource.data.mid == request.auth.uid
+              || (hasLink(gid) && get(linkPath(gid)).data.get('verified', false) == true));
+        allow delete: if signedIn() && t.size() >= 20;
       }
 
       match /plans/{day} {

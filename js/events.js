@@ -343,7 +343,7 @@ async function removeMember(mid){
 async function deleteGroup(gid){
   stopSubs();
   const paths = [];
-  for (const sub of ["answers", "overrides", "plans", "seen", "links", "members"]){
+  for (const sub of ["answers", "overrides", "plans", "seen", "moves", "links", "members"]){
     const snap = await withRetry(() => S.db.collection(`groups/${gid}/${sub}`).get());
     snap.docs.forEach(d => paths.push(`groups/${gid}/${sub}/${d.id}`));
     // passcodes can't be listed; remove one per member (members come last, so this runs before them)

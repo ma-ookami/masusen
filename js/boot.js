@@ -105,6 +105,8 @@ async function boot(){
   }
   clearTimeout(slow);
   await loadMyGroups();
+  if (isOldHome()) return moveToNewHome();   // the old URL hands everything over to the new one
+  await claimMove();
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   let start = hashGid();
   if (!start && standalone){
