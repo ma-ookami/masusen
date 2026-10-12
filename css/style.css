@@ -320,6 +320,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .wd.skipd{background:var(--sky);color:var(--sky-ink);border-color:var(--sky)}
 .wd.restd{background:color-mix(in srgb,var(--sky) 45%,var(--surface));border-color:var(--sky);border-style:dashed}
 .wd.restd .c,.wd.restd .dn,.wd.restd:not(.today):not(.tmrw) .w{color:var(--sky-ink)}
+.wd.restd.sel{border:2px solid var(--sky)}   /* the picked rest day: same colour, solid line */
 .wk.restd{background:var(--sky);border-color:var(--sky)} .wk.restd .wk-v,.wk.restd .wk-d{color:var(--sky-ink)}
 .wd.skipd .c,.wd.skipd .dn,.wd.skipd:not(.today):not(.tmrw) .w{color:var(--sky-ink)}
 .wd.held .c,.wd.held .dn,.wd.held:not(.today):not(.tmrw) .w{color:var(--masu-ink)}
