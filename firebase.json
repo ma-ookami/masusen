@@ -14,7 +14,9 @@
       "**/.*",
       "**/node_modules/**",
       "images",
-      "images/**"
+      "images/**",
+      "tools",
+      "tools/**"
     ],
     "cleanUrls": true,
     "headers": [
