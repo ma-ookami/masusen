@@ -12,7 +12,9 @@
       "OVERVIEW.md",
       ".gitignore",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "images",
+      "images/**"
     ],
     "cleanUrls": true,
     "headers": [
