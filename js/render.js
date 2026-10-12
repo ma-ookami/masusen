@@ -110,7 +110,7 @@ function renderMain(){
   // everyone has answered and even the maybes can't make it: the day is off
   const skip = !fest && !rule.rest && ids.length > 0 && ids.every(id => today[id]) && masuN + tabunN < rule.need;
   let status;
-  if (rule.rest) status = `💤 ${dayWord}はお休み・返事しなくて大丈夫`;
+  if (rule.rest) status = `💤 ${dayWord}はお休み`;
   else if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
   else if (skip) status = `⏭ ${dayWord}は開催スキップです!`;
   else if (rule.override) status = `${dayWord}だけ${rule.need}人でOK・あと${rest}人`;
