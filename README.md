@@ -18,7 +18,8 @@
 | `js/boot.js` | Firebase との接続・新しい版の確認・テーマ・起動 |
 | `images/` | 確認用の画像(Git にも公開サイトにも入らない) |
 | `tools/stamp.js` | コミットのたびに、index.html の js・css の読み込みに目印(`?v=…`)を付ける。古いファイルが混ざって動かなくなるのを防ぐ |
-| `tools/install-hook.js` | 上をコミット前に自動で動かす設定を入れる(別のPCで作業するときに一度だけ `node tools/install-hook.js`) |
+| `tools/deploy.js` | コミットのあと、裏で Firebase Hosting に公開する(結果は `.firebase/last-deploy.log`) |
+| `tools/install-hook.js` | 上の2つをコミットの前後に自動で動かす設定を入れる(別のPCで作業するときに一度だけ `node tools/install-hook.js`) |
 | `firebase-config.js` | Firebase の設定(手順4で貼り付ける)と App Check のキー |
 | `firestore.rules` | データを守るルール(手順3で貼り付ける) |
 | `manifest.webmanifest` | ホーム画面に追加したときのアプリ名・色の設定 |
