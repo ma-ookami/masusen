@@ -2386,15 +2386,15 @@ function mascotReact(status){
 }
 mascots().forEach(el => {
   el.addEventListener("click", () => { try { navigator.vibrate && navigator.vibrate(10); } catch {} mascotDo(el, el.classList.contains("sleep") ? "wiggle" : "hop"); });
-  (function idle(){
-    setTimeout(() => {
-      if (!document.hidden && el.offsetParent){
-        mascotDo(el, mascotIdleMove(el));
-      }
-      idle();
-    }, 14000 + Math.random() * 7000);
-  })();
 });
+(function idle(last){
+  setTimeout(() => {
+    const pick = mascots().filter(el => el !== last);
+    const el = pick[Math.floor(Math.random() * pick.length)];
+    if (!document.hidden && el.offsetParent) mascotDo(el, mascotIdleMove(el));
+    idle(el);
+  }, 5000 + Math.random() * 2000);
+})(null);
 if (lateNight()) setMascotMood("sleep");
 
 // day rollover at 4:00 and countdown refresh
