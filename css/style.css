@@ -65,7 +65,8 @@ button{cursor:pointer}
 .mascot .eyes{transform-box:fill-box;transform-origin:center}
 .mascot.blink .eyes{animation:mBlink .3s steps(2)}
 .char-top{display:flex;align-items:center;gap:14px}
-.mascot.char-prev{width:84px;height:96px;flex:none;margin:4px 6px 0}
+.mascot.char-prev{width:84px;height:96px;flex:none;margin:4px 6px 0;transition:opacity .2s}
+.mascot.char-prev.off{opacity:.35}
 .char-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .char-side .switch-row{width:100%}
 .char-parts{display:flex;flex-direction:column;gap:8px}
@@ -97,6 +98,15 @@ button{cursor:pointer}
 @keyframes mTwL{0%,100%{transform:none}20%,50%{transform:rotate(-16deg)}35%{transform:none}}
 @keyframes mTwR{0%,100%{transform:none}20%,50%{transform:rotate(16deg)}35%{transform:none}}
 .mascot .bulb{fill:#ff6b5a;transition:fill .3s}
+/* propeller spins when jumping; the leaf sways; eyebrows drop on a sad day */
+.mascot .prop,.mascot .leaf,.mascot .brows{transform-box:fill-box;transform-origin:50% 50%}
+.mascot .leaf{transform-origin:0% 100%}
+.mascot.hop .prop,.mascot.cheer .prop{animation:mProp .25s linear 3}
+.mascot.wiggle .leaf,.mascot.groove .leaf{animation:mLeaf .6s ease-in-out}
+.mascot.sad .brows path:first-child{transform:rotate(-12deg);transform-box:fill-box;transform-origin:100% 50%}
+.mascot.sad .brows path:last-child{transform:rotate(12deg);transform-box:fill-box;transform-origin:0% 50%}
+@keyframes mProp{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.15)}}
+@keyframes mLeaf{0%,100%{transform:none}30%{transform:rotate(-14deg)}70%{transform:rotate(10deg)}}
 .mascot.happy .bulb{animation:mBulb .9s steps(1) infinite}
 .mascot.sleep .bulb{fill:#8a8a8a}
 .mascot .wave{opacity:.85;transition:opacity .3s}
