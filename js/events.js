@@ -384,7 +384,17 @@ function tapHour(hr){
   saveMine({ from:f, until:u });
 }
 let commentOpened = false;
-$("commentOpen").addEventListener("click", () => { commentOpened = true; renderSheets(); $("commentInput").focus(); });
+// keep the text box in sight inside the option sheet (phones jump to the top when the keyboard opens or the sheet redraws)
+function keepInView(el){
+  const go = () => { if (!el.isConnected || el.closest("[hidden]")) return; el.scrollIntoView({ block:"center", behavior:"smooth" }); };
+  requestAnimationFrame(go); setTimeout(go, 350);   // again once the keyboard is up
+}
+["commentInput", "gameInput"].forEach(id => $(id).addEventListener("focus", e => keepInView(e.target.closest("form"))));
+if (window.visualViewport) visualViewport.addEventListener("resize", () => {
+  const a = document.activeElement;
+  if (a && (a.id === "commentInput" || a.id === "gameInput")) keepInView(a.closest("form"));
+});
+$("commentOpen").addEventListener("click", () => { commentOpened = true; renderSheets(); $("commentInput").focus({ preventScroll:true }); keepInView($("commentForm")); });
 $("timeClear").addEventListener("click", () => saveMine({ from:null, until:null }));
 $("dtStatus").addEventListener("click", e => {
   const b = e.target.closest("button[data-s]"); if (!b) return;
@@ -392,10 +402,10 @@ $("dtStatus").addEventListener("click", e => {
 });
 $("gameForm").addEventListener("submit", e => {
   e.preventDefault(); const g = $("gameInput").value.trim(); if (!g) return;
-  $("gameInput").value = ""; saveMine({ game:g });
+  $("gameInput").value = ""; saveMine({ game:g }); keepInView($("gameForm"));
 });
 $("commentForm").addEventListener("submit", e => {
-  e.preventDefault(); saveMine({ comment: $("commentInput").value.trim() }); $("commentInput").blur(); toast("ひとことを送りました");
+  e.preventDefault(); saveMine({ comment: $("commentInput").value.trim() }); $("commentInput").blur(); keepInView($("commentForm")); toast("ひとことを送りました");
 });
 $("clearBtn").addEventListener("click", () => clearMine());
 function clearMine(msg){
