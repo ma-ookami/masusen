@@ -37,7 +37,7 @@ showSetTab("me");
 $("setBtn").addEventListener("click", () => {
   S.seen = undefined; if (isCreatorHere()) loadSeen();
   charDraft = null; renderCharMaker(); setCharOpen(false);
- gPicker.set(S.group); restDraft = [...(S.group.restDays || [])]; renderRestPick(); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
+ gPicker.set(S.group); $("countTabun").checked = !!S.group.countTabun; restDraft = [...(S.group.restDays || [])]; renderRestPick(); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("anonBtn").addEventListener("click", () => {
   S.anon = !S.anon;
@@ -248,6 +248,7 @@ async function setFrame(id, k){
     toast(k ? `${S.members[id].name}を${FRAMES[k].label}にしました` : `${S.members[id].name}の枠を外しました`);
   } catch (err){ S.frames = { ...S.frames }; if (prev) S.frames[id] = prev; else delete S.frames[id]; render(); onWriteError(err); }
 }
+$("countTabun").addEventListener("change", () => updateRuleSave());
 let restDraft = [];
 function renderRestPick(){
   $("restPick").replaceChildren(...DOW.map((dn, i) => h("button", { type:"button", "aria-pressed":String(restDraft.includes(i)),
@@ -259,16 +260,17 @@ function ruleChanged(){
   const r = gPicker.get(), g = S.group;
   return !!g && !(r.rule === g.rule && r.quorum === g.quorum && r.minus === g.minus && r.ratio === g.ratio && r.minOpen === g.minOpen
     && JSON.stringify(r.fq) === JSON.stringify(g.fq) && r.ftotal === g.ftotal
-    && restDraft.join() === (g.restDays || []).join());
+    && restDraft.join() === (g.restDays || []).join()
+    && $("countTabun").checked === !!g.countTabun);
 }
 function updateRuleSave(){ $("ruleSave").disabled = !ruleChanged(); }
 $("ruleSave").addEventListener("click", async () => {
   if (!ruleChanged()) return;
-  const r = { ...gPicker.get(), restDays:[...restDraft] };
+  const r = { ...gPicker.get(), restDays:[...restDraft], countTabun:$("countTabun").checked };
   $("ruleSave").disabled = true;
   try {
     await withRetry(() => S.db.doc("groups/" + S.gid).update(r)); S.group = { ...S.group, ...r }; render();
-    toast("保存しました:" + ruleText(r, Object.keys(S.members).length) + (r.restDays.length ? `・毎週${r.restDays.map(i => DOW[i]).join("")}はお休み` : ""));
+    toast("保存しました:" + ruleText(r, Object.keys(S.members).length) + (r.restDays.length ? `・毎週${r.restDays.map(i => DOW[i]).join("")}はお休み` : "") + (r.countTabun ? "・たぶんますも数える" : ""));
   }
   catch (err){ onWriteError(err); updateRuleSave(); }
 });

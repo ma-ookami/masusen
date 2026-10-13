@@ -94,7 +94,7 @@ function renderMain(){
   $("roNotice").hidden = !ro;
 
   // scoreboard
-  const masuN = ids.filter(id => isMasu(today[id])).length;
+  const masuN = ids.filter(id => counts(today[id])).length;
   const tabunN = ids.filter(id => isTabun(today[id])).length;
   {
     const t = parseDay(day), w = t.getUTCDay();
@@ -106,7 +106,7 @@ function renderMain(){
   $("masuN").textContent = masuN; $("needN").textContent = ids.length;
   $("slashN").hidden = false; $("needN").hidden = false;
   $("unitN").textContent = "ます";
-  const masuIds = ids.filter(id => isMasu(today[id])), chk = ruleCheck(rule, masuIds);
+  const masuIds = ids.filter(id => counts(today[id])), chk = ruleCheck(rule, masuIds);
   const rest = chk.left;
   const fest = !rule.rest && chk.met;
   const dayWord = day === S.day ? "今日" : day === addDays(S.day, 1) ? "明日" : "この日";
@@ -122,7 +122,7 @@ function renderMain(){
     + (chk.parts.length && chk.totalLeft > chk.parts.reduce((a, p) => a + p.left, 0) ? `・合計あと${chk.totalLeft}人` : "") + "で開催";
   else if (rule.open) status = `${rule.need}人いればやる・あと${rest}人`;
   else status = `あと${rest}人で開催`;
-  $("scoreSub").textContent = status + (tabunN && !skip && !rule.rest ? `・たぶん${tabunN}人` : "");
+  $("scoreSub").textContent = status + (tabunN && !skip && !rule.rest ? (S.group.countTabun ? `(たぶん${tabunN}人ふくむ)` : `・たぶん${tabunN}人`) : "");
   const card = $("scoreCard"), wasHeld = card.classList.contains("held"), wasSkip = card.classList.contains("skip");
   card.classList.toggle("held", fest);
   card.classList.toggle("soft", fest && !!rule.open);
@@ -140,7 +140,7 @@ function renderMain(){
   $("week").replaceChildren(...weekDays().map((d, i) => {
     const n = masuCount(d), r = needFor(d), my = mineOn(d);
     const ad = answersFor(d), mids = Object.keys(S.members);
-    const held = !r.rest && ruleCheck(r, mids.filter(id => isMasu(ad[id]))).met;
+    const held = !r.rest && ruleCheck(r, mids.filter(id => counts(ad[id]))).met;
     const skipped = !held && !r.rest && mids.length > 0 && mids.every(id => ad[id])
       && !ruleCheck(r, mids.filter(id => isMasu(ad[id]) || isTabun(ad[id]))).met;
     const t = parseDay(d);
@@ -396,11 +396,11 @@ async function renderCal(){
   }
   const cnt = {}, answered = new Set(), who = {};
   const addMasu = (day, uid) => { cnt[day] = (cnt[day] || 0) + 1; (who[day] = who[day] || []).push(uid); };
-  list.forEach(a => { answered.add(a.day + "_" + a.uid); if (isMasu(a) && S.members[a.uid]) addMasu(a.day, a.uid); });
+  list.forEach(a => { answered.add(a.day + "_" + a.uid); if (counts(a) && S.members[a.uid]) addMasu(a.day, a.uid); });
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
   for (let d = 1; d <= days; d++){
     const key = `${ym}-${String(d).padStart(2, "0")}`;
-    for (const id in S.members) if (!answered.has(key + "_" + id) && (weeklyOf(id, key) || {}).status === "masu") addMasu(key, id);
+    for (const id in S.members) if (!answered.has(key + "_" + id) && counts(weeklyOf(id, key))) addMasu(key, id);
   }
   const cells = DOW.map((d, i) => h("div", { class:"dow" + (i === 0 ? " sun" : i === 6 ? " sat" : ""), text:d }));
   for (let i = 0; i < first; i++) cells.push(h("div", { class:"d pad" }));

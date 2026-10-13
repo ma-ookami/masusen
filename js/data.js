@@ -29,7 +29,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.onSnapshot(snap => {
     if (S.gid !== gid) return;
     const d = snap.exists ? snap.data() : null;
-    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), restDays:cleanRestDays(d.restDays), showPlan: d.showPlan !== false, createdBy: str(d.createdBy,200) } : null;
+    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), restDays:cleanRestDays(d.restDays), countTabun:d.countTabun === true, showPlan: d.showPlan !== false, createdBy: str(d.createdBy,200) } : null;
     if (!snap.metadata.fromCache || d) S.groupLoaded = true; else settle("groupLoaded");
     render();
   }, onSubError));
@@ -260,6 +260,8 @@ function ruleCheck(r, ids){
   const left = Math.max(0, r.need - ids.length, ids.length ? 0 : 1);
   return { met:left === 0, left, parts:[] };
 }
+// counts toward holding the day: ます, and たぶんます too when the group says so
+const counts = a => isMasu(a) || (!!(S.group && S.group.countTabun) && isTabun(a));
 function masuCount(day){ const ad = answersFor(day); return Object.values(ad).filter(isMasu).length; }
 const myKey = day => day + "_" + S.me;
 // my real answer for the day ("none" = I cleared it), and the one that counts as an answer
