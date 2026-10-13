@@ -413,6 +413,7 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .mhead h2{font-family:var(--f-body);font-weight:800;font-size:15px}
 .members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .mem .ago{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.mem .ago.new{color:var(--coral);font-weight:800;letter-spacing:.03em}
 .mem{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:0 8px;align-items:center;padding:5px 10px 5px 12px;border-radius:12px;background:var(--surface-2);border-left:5px solid var(--none)}
 .mem.masu{border-left-color:var(--masu)} .mem.tabun{border-left-color:var(--tabun)} .mem.sen{border-left-color:var(--sen)}
 

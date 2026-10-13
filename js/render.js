@@ -184,7 +184,7 @@ function renderMain(){
     const shown = S.anon ? `メンバー${i + 1}` : m.name;
     return h("li", { class: "mem " + st },
       h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null, a && a.usual ? h("span", { class:"usual", title:"毎週この曜日のいつもの返事", text:"🔁 毎週" }) : null),
-      h("span", { class:"ago", text: a && !a.usual ? agoText(a.updatedAt) : "" }),
+      ((t) => h("span", { class:"ago" + (t === "new" ? " new" : ""), text:t }))(a && !a.usual ? answerAgo(a.updatedAt) : ""),
       a ? h("span", { class:"st " + st + (a.usual ? " usual-st" : ""), text:`${STATUSES[st].ic} ${STATUSES[st].label}` }) : h("span"),
       meta.length ? h("div", { class:"meta" }, meta) : null);
   }));

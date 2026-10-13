@@ -303,6 +303,13 @@ function renderColorPick(){
     onclick:() => saveColor(i) }, ch)));
 }
 // how long ago, in the coarsest unit that fits
+// next to an answer in the member list: not to the minute, so nobody feels watched
+function answerAgo(t){
+  if (!t) return "";
+  if (Date.now() - t < 3600e3) return "new";
+  const days = Math.round((parseDay(gameDay()) - parseDay(gameDay(t))) / 86400e3);
+  return days <= 0 ? "今日" : `${days}日前`;
+}
 function agoText(t){
   if (!t) return "";
   const m = Math.floor((Date.now() - t) / 60000);
