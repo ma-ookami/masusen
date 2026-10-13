@@ -102,9 +102,10 @@ function renderMain(){
       h("span", { class:"dow-pill", style:`--c:var(--wd${isHoliday(day) ? 0 : w})`, text:DOW[w] }),
       ...(day === S.day && lateNight() ? [h("span", { class:"late", text:"(🔄朝4時)" })] : []));
   }
-  $("masuN").textContent = masuN; $("needN").textContent = rule.rest ? "" : rule.need;
-  $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
-  $("unitN").textContent = rule.open ? "人がます" : "ます";
+  // out of everyone in the group (whatever the rule), so nobody looks left out of the count
+  $("masuN").textContent = masuN; $("needN").textContent = ids.length;
+  $("slashN").hidden = false; $("needN").hidden = false;
+  $("unitN").textContent = "ます";
   const masuIds = ids.filter(id => isMasu(today[id])), chk = ruleCheck(rule, masuIds);
   const rest = chk.left;
   const fest = !rule.rest && chk.met;
