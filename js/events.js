@@ -48,7 +48,7 @@ $("anonBtn").addEventListener("click", () => {
 $("calBtn").addEventListener("click", () => { S.calMonth = S.sel.slice(0, 7); delete S.monthCache[S.month]; openSheet("shCal"); });
 
 const cPicker = rulePicker($("cRule"), () => 0, () => { $("cRuleNow").textContent = "開催のルール:" + ruleText(cPicker.get(), 0); });
-const gPicker = rulePicker($("gRule"), () => Object.keys(S.members).length, () => updateRuleSave());
+const gPicker = rulePicker($("gRule"), () => Object.keys(S.members).length, () => { updateRuleSave(); renderFrameMembers(); }, true);
 
 $("openCreate").addEventListener("click", () => { setHomeOpen(homeOpen === "create" ? null : "create"); if (homeOpen) $("cName").focus(); });
 $("openPaste").addEventListener("click", () => { setHomeOpen(homeOpen === "paste" ? null : "paste"); if (homeOpen) $("pasteInput").focus(); });
@@ -218,6 +218,35 @@ $("gNameForm").addEventListener("submit", async e => {
 });
 // a burst of +/− taps becomes one write
 // the save button lights up only when the picked rule differs from the saved one
+// 枠のメンバー: shown while "枠で決める" is picked. Everyone sets their own; the creator can set anyone's.
+function renderFrameMembers(){
+  const box = $("frameMembers");
+  box.hidden = gPicker.rule() !== "frame";
+  if (box.hidden) return;
+  const admin = isCreatorHere();
+  const ids = Object.keys(S.members).sort((a, b) => (b === S.me) - (a === S.me) || S.members[a].joinedAt - S.members[b].joinedAt);
+  $("frameList").replaceChildren(...ids.map(id => {
+    const can = (id === S.me || admin) && S.canWrite !== false, cur = S.frames[id] || "";
+    return h("li", { class:"frame-row" },
+      h("span", { class:"who" }, frameRing(id, avatar(id, S.members[id].name)), h("span", { text:S.members[id].name + (id === S.me ? "(あなた)" : "") })),
+      h("div", { class:"frame-pick", role:"radiogroup", "aria-label":`${S.members[id].name}の枠` },
+        [["", "なし"], ...Object.entries(FRAMES).map(([k, f]) => [k, f.label])].map(([k, l]) =>
+          h("button", { type:"button", role:"radio", "aria-checked":String(cur === k), disabled:!can,
+            class:"fp" + (cur === k ? " on" : ""), style:k ? `--ring:${FRAMES[k].color}` : "", onclick:() => setFrame(id, k) }, l))));
+  }));
+  $("frameHint").textContent = admin ? "作った人は、全員の枠を変えられます。" : "自分の枠だけ変えられます。";
+}
+async function setFrame(id, k){
+  const prev = S.frames[id] || "";
+  if (prev === k) return;
+  S.frames = { ...S.frames }; if (k) S.frames[id] = k; else delete S.frames[id];
+  render();
+  try {
+    const ref = S.db.doc(`groups/${S.gid}/frames/${id}`);
+    await withRetry(() => k ? ref.set({ c:k }) : ref.delete());
+    toast(k ? `${S.members[id].name}を${FRAMES[k].label}にしました` : `${S.members[id].name}の枠を外しました`);
+  } catch (err){ S.frames = { ...S.frames }; if (prev) S.frames[id] = prev; else delete S.frames[id]; render(); onWriteError(err); }
+}
 let restDraft = [];
 function renderRestPick(){
   $("restPick").replaceChildren(...DOW.map((dn, i) => h("button", { type:"button", "aria-pressed":String(restDraft.includes(i)),
@@ -228,6 +257,7 @@ function renderRestPick(){
 function ruleChanged(){
   const r = gPicker.get(), g = S.group;
   return !!g && !(r.rule === g.rule && r.quorum === g.quorum && r.minus === g.minus && r.ratio === g.ratio && r.minOpen === g.minOpen
+    && JSON.stringify(r.fq) === JSON.stringify(g.fq) && r.ftotal === g.ftotal
     && restDraft.join() === (g.restDays || []).join());
 }
 function updateRuleSave(){ $("ruleSave").disabled = !ruleChanged(); }
@@ -273,7 +303,7 @@ async function leaveGroup(gid, mid){
   stopSubs();
   // my link proves who I am on a re-entered browser, so it goes last, together with my record
   await S.db.deleteMany(answers);
-  await S.db.deleteMany([`groups/${gid}/seen/${mid}`, `groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`, `groups/${gid}/links/${S.uid}`]);
+  await S.db.deleteMany([`groups/${gid}/seen/${mid}`, `groups/${gid}/frames/${mid}`, `groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`, `groups/${gid}/links/${S.uid}`]);
 }
 // two taps: the first arms the button, the second (within 5 s) deletes
 let delArmed = null;
@@ -336,7 +366,7 @@ async function removeMember(mid){
     ans.docs.forEach(d => paths.push(`groups/${gid}/answers/${d.id}`));
     const links = await withRetry(() => S.db.collection(`groups/${gid}/links`).where("mid", "==", mid).get());
     links.docs.forEach(d => paths.push(`groups/${gid}/links/${d.id}`));
-    paths.push(`groups/${gid}/seen/${mid}`, `groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`);
+    paths.push(`groups/${gid}/seen/${mid}`, `groups/${gid}/frames/${mid}`, `groups/${gid}/pins/${mid}`, `groups/${gid}/members/${mid}`);
     await S.db.deleteMany(paths);
     toast(`${name}をグループから外しました`);
   } catch (err){ onWriteError(err); }
@@ -345,7 +375,7 @@ async function removeMember(mid){
 async function deleteGroup(gid){
   stopSubs();
   const paths = [];
-  for (const sub of ["answers", "overrides", "plans", "seen", "moves", "links", "members"]){
+  for (const sub of ["answers", "overrides", "plans", "seen", "moves", "frames", "links", "members"]){
     const snap = await withRetry(() => S.db.collection(`groups/${gid}/${sub}`).get());
     snap.docs.forEach(d => paths.push(`groups/${gid}/${sub}/${d.id}`));
     // passcodes can't be listed; remove one per member (members come last, so this runs before them)

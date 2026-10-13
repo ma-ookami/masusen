@@ -456,6 +456,20 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .by-line .lbl{font-size:12px;color:var(--muted);font-weight:700}
 .chip.with-av{display:inline-flex;align-items:center;gap:6px;padding-left:6px}
 .mlist li .who{display:flex;align-items:center;gap:8px;min-width:0}
+/* 枠 */
+.av-ring{display:inline-grid;place-items:center;flex:none;padding:2px;border-radius:50%;box-shadow:0 0 0 2px var(--ring)}
+.frame-steps{display:flex;flex-direction:column;gap:6px}
+.frame-step{display:flex;align-items:center;gap:8px}
+.frame-step .stepper{flex:1;margin:0}
+.frame-dot{width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 3px var(--ring) inset;flex:none}
+.frame-l{min-width:3em;font-weight:800;font-size:13px}
+.frame-l.wide{min-width:calc(3em + 22px)}
+.frame-members{display:flex;flex-direction:column;gap:6px}
+.frame-row{flex-wrap:wrap}
+.frame-pick{display:flex;gap:4px;flex-wrap:wrap}
+.frame-pick .fp{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:800;color:var(--muted)}
+.frame-pick .fp.on{border-color:var(--ring,var(--fg));color:var(--fg);box-shadow:0 0 0 1px var(--ring,var(--fg)) inset}
+.frame-pick .fp:disabled{opacity:.45}
 .mlist li .who-t{display:flex;flex-direction:column;min-width:0;line-height:1.25}
 .mlist li .seen{font-size:11px;font-weight:600;color:var(--muted)}
 .mem .meta{grid-column:1/-1;font-size:12px;color:var(--muted);overflow-wrap:anywhere;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin-top:3px}

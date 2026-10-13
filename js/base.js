@@ -36,7 +36,7 @@ const S = {
   db:null, user:null, uid:null, canWrite:null,
   gid:null, group:null, groupLoaded:false,
   members:{}, membersLoaded:false,
-  answers:{}, overrides:{}, plans:{}, day:"", sel:"", month:"",
+  answers:{}, overrides:{}, plans:{}, frames:{}, day:"", sel:"", month:"",
   calMonth:"", monthCache:{},
   myGroups:[], owned:[], fatal:null, unsubs:[], prevFest:"",
 };
@@ -107,10 +107,14 @@ function cleanAnswer(d){
   return { uid:str(d.uid,200), day:str(d.day,10), month:str(d.month,7) || str(d.day,7), status:d.status,
     from:num(d.from), until:num(d.until), game:str(d.game,24), conds:Array.isArray(d.conds) ? d.conds.map(c => TAG_RENAMES[c] || c).filter(c => (d.status === "sen" ? SEN_TAGS : CONDS).includes(c)).slice(0, 16) : [], comment:str(d.comment,40), cutoff:num(d.cutoff), updatedAt:num(d.updatedAt)||0 };
 }
+// 枠: three neutral colour groups a member can be in
+const FRAMES = { blue:{ label:"青枠", color:"#3b82f6" }, red:{ label:"赤枠", color:"#ef4444" }, green:{ label:"緑枠", color:"#22c55e" } };
+const cleanFq = v => Object.fromEntries(Object.keys(FRAMES).map(k => [k, clamp(v && v[k], 0, 20, k === "blue" ? 2 : 0)]));
 function cleanRule(d){
-  const rule = ["count","minus","ratio","open"].includes(d && d.rule) ? d.rule : "count";
+  const rule = ["count","minus","ratio","open","frame"].includes(d && d.rule) ? d.rule : "count";
   return { rule, quorum:clamp(d && d.quorum, 1, 20, 4), minus:clamp(d && d.minus, 0, 19, 1),
-    ratio:RATIOS[d && d.ratio] ? d.ratio : "half", minOpen:clamp(d && d.minOpen, 1, 20, 2) };
+    ratio:RATIOS[d && d.ratio] ? d.ratio : "half", minOpen:clamp(d && d.minOpen, 1, 20, 2),
+    fq:cleanFq(d && d.fq), ftotal:clamp(d && d.ftotal, 0, 20, 0) };
 }
 // weekdays that are always rest days (0 = Sunday)
 const cleanRestDays = v => Array.isArray(v) ? [...new Set(v.filter(x => Number.isInteger(x) && x >= 0 && x <= 6))].sort() : [];

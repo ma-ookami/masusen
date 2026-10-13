@@ -105,16 +105,20 @@ function renderMain(){
   $("masuN").textContent = masuN; $("needN").textContent = rule.rest ? "" : rule.need;
   $("slashN").hidden = !!rule.open; $("needN").hidden = !!rule.open;
   $("unitN").textContent = rule.open ? "人がます" : "ます";
-  const rest = rule.need - masuN;
-  const fest = !rule.rest && masuN >= rule.need && masuN > 0;
+  const masuIds = ids.filter(id => isMasu(today[id])), chk = ruleCheck(rule, masuIds);
+  const rest = chk.left;
+  const fest = !rule.rest && chk.met;
   const dayWord = day === S.day ? "今日" : day === addDays(S.day, 1) ? "明日" : "この日";
   // everyone has answered and even the maybes can't make it: the day is off
-  const skip = !fest && !rule.rest && ids.length > 0 && ids.every(id => today[id]) && masuN + tabunN < rule.need;
+  const skip = !fest && !rule.rest && ids.length > 0 && ids.every(id => today[id])
+    && !ruleCheck(rule, ids.filter(id => isMasu(today[id]) || isTabun(today[id]))).met;
   let status;
   if (rule.rest) status = `💤 ${dayWord}はお休み`;
   else if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
   else if (skip) status = `⏭ ${dayWord}は開催スキップです!`;
   else if (rule.override) status = `${dayWord}だけ${rule.need}人でOK・あと${rest}人`;
+  else if (rule.frame) status = (chk.parts.length ? chk.parts.map(p => `${FRAMES[p.k].label}あと${p.left}人`).join("・") : `あと${rest}人`)
+    + (chk.parts.length && chk.totalLeft > chk.parts.reduce((a, p) => a + p.left, 0) ? `・全体あと${chk.totalLeft}人` : "") + "で開催";
   else if (rule.open) status = `${rule.need}人いればやる・あと${rest}人`;
   else status = `あと${rest}人で開催`;
   $("scoreSub").textContent = status + (tabunN && !skip && !rule.rest ? `・たぶん${tabunN}人` : "");
@@ -133,10 +137,11 @@ function renderMain(){
 
   // week strip
   $("week").replaceChildren(...weekDays().map((d, i) => {
-    const n = masuCount(d), r = needFor(d), held = n >= r.need && n > 0, my = mineOn(d);
+    const n = masuCount(d), r = needFor(d), my = mineOn(d);
     const ad = answersFor(d), mids = Object.keys(S.members);
-    const tb = mids.filter(id => ad[id] && ad[id].status === "tabun").length;
-    const skipped = !held && !r.rest && mids.length > 0 && mids.every(id => ad[id]) && n + tb < r.need;
+    const held = !r.rest && ruleCheck(r, mids.filter(id => isMasu(ad[id]))).met;
+    const skipped = !held && !r.rest && mids.length > 0 && mids.every(id => ad[id])
+      && !ruleCheck(r, mids.filter(id => isMasu(ad[id]) || isTabun(ad[id]))).met;
     const t = parseDay(d);
     const wdN = t.getUTCDay();
     return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : skipped ? " skipd" : r.rest ? " restd" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),
@@ -183,7 +188,7 @@ function renderMain(){
     const meta = metaNodes(a, false, S.anon);
     const shown = S.anon ? `メンバー${i + 1}` : m.name;
     return h("li", { class: "mem " + st },
-      h("div", { class:"nm" }, avatar(id, S.anon ? String(i + 1) : m.name), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null, a && a.usual ? h("span", { class:"usual", title:"毎週この曜日のいつもの返事", text:"🔁 毎週" }) : null),
+      h("div", { class:"nm" }, frameRing(id, avatar(id, S.anon ? String(i + 1) : m.name)), h("span", { class:"nm-t", text:shown }), id === S.me ? h("em", { text:"あなた" }) : null, a && a.usual ? h("span", { class:"usual", title:"毎週この曜日のいつもの返事", text:"🔁 毎週" }) : null),
       ((t) => h("span", { class:"ago" + (t === "new" ? " new" : ""), text:t }))(a && !a.usual ? answerAgo(a.updatedAt) : ""),
       a ? h("span", { class:"st " + st + (a.usual ? " usual-st" : ""), text:`${STATUSES[st].ic} ${STATUSES[st].label}` }) : h("span"),
       meta.length ? h("div", { class:"meta" }, meta) : null);
@@ -327,6 +332,7 @@ function renderSheets(){
       $("creatorVerifyForm").hidden = !hasPin;
     }
     if (creator) renderMemManage();
+    renderFrameMembers();
   }
   if (isOpen("shSet")) renderColorPick();
   if (isOpen("shSet") && S.members[S.me]){
@@ -387,18 +393,19 @@ async function renderCal(){
     Object.keys(ovs).forEach(d => { if (d >= S.day && !S.overrides[d]) delete ovs[d]; });
     Object.assign(ovs, Object.fromEntries(Object.entries(S.overrides).filter(([d]) => d.startsWith(ym))));
   }
-  const cnt = {}, answered = new Set();
-  list.forEach(a => { answered.add(a.day + "_" + a.uid); if (isMasu(a) && S.members[a.uid]) cnt[a.day] = (cnt[a.day] || 0) + 1; });
+  const cnt = {}, answered = new Set(), who = {};
+  const addMasu = (day, uid) => { cnt[day] = (cnt[day] || 0) + 1; (who[day] = who[day] || []).push(uid); };
+  list.forEach(a => { answered.add(a.day + "_" + a.uid); if (isMasu(a) && S.members[a.uid]) addMasu(a.day, a.uid); });
   const first = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
   for (let d = 1; d <= days; d++){
     const key = `${ym}-${String(d).padStart(2, "0")}`;
-    for (const id in S.members) if (!answered.has(key + "_" + id) && (weeklyOf(id, key) || {}).status === "masu") cnt[key] = (cnt[key] || 0) + 1;
+    for (const id in S.members) if (!answered.has(key + "_" + id) && (weeklyOf(id, key) || {}).status === "masu") addMasu(key, id);
   }
   const cells = DOW.map((d, i) => h("div", { class:"dow" + (i === 0 ? " sun" : i === 6 ? " sat" : ""), text:d }));
   for (let i = 0; i < first; i++) cells.push(h("div", { class:"d pad" }));
   let held = 0;
   for (let d = 1; d <= days; d++){
-    const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, rr = needFor(key, ovs), isHeld = n > 0 && n >= rr.need;
+    const key = `${ym}-${String(d).padStart(2, "0")}`, n = cnt[key] || 0, rr = needFor(key, ovs), isHeld = !rr.rest && ruleCheck(rr, who[key] || []).met;
     if (isHeld) held++;
     const wd = (first + d - 1) % 7;
     cells.push(h("div", { class: "d" + (isHeld ? " held" : "") + (key === S.day ? " today" : "") + (isHoliday(key) || wd === 0 ? " hol" : wd === 6 ? " sat" : "") },

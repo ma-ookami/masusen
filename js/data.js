@@ -17,7 +17,7 @@ function openGroup(gid, quiet){
     if (S.sel < S.day) S.sel = S.day;
   } else {
   closeSheets();
-  Object.assign(S, { gid, deniedFor:null, me:null, linkMid:null, linkVerified:false, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, monthCache:{}, prevFest:"", ansReady:false, festState:{} });
+  Object.assign(S, { gid, deniedFor:null, me:null, linkMid:null, linkVerified:false, linkLoaded:false, group:null, groupLoaded:false, members:{}, membersLoaded:false, answers:{}, overrides:{}, plans:{}, frames:{}, monthCache:{}, prevFest:"", ansReady:false, festState:{} });
   planEditing = false;
   S.day = gameDay(); S.sel = S.day; S.month = S.day.slice(0, 7); S.calMonth = S.month;
   render();
@@ -42,6 +42,13 @@ function openGroup(gid, quiet){
     if (!snap.metadata.fromCache || m[S.uid] || (S.linkMid && m[S.linkMid])) S.membersLoaded = true; else settle("membersLoaded");
     render();
   }, onSubError));
+
+  S.unsubs.push(g.collection("frames").onSnapshot(snap => {
+    if (S.gid !== gid) return;
+    const f = {};
+    snap.docs.forEach(doc => { const c = doc.data() && doc.data().c; if (FRAMES[c]) f[doc.id] = c; });
+    S.frames = f; render();
+  }, () => {}));
 
   // which member this browser acts as, when it isn't the browser that joined
   S.unsubs.push(g.collection("links").doc(S.uid).onSnapshot(snap => {
@@ -180,6 +187,11 @@ function ruleText(r, n){
     return r.minus === 0 ? `全員(${n}人)そろったら開催` : `${n}人中${minusNeed(r.minus, n)}人で開催`;
   }
   if (r.rule === "ratio") return `メンバーの${RATIOS[r.ratio].label}で開催` + (n ? `(${n}人中${Math.max(1, RATIOS[r.ratio].need(n))}人)` : "");
+  if (r.rule === "frame"){
+    const parts = Object.keys(FRAMES).filter(k => r.fq[k] > 0).map(k => `${FRAMES[k].label}${r.fq[k]}人`);
+    if (r.ftotal > 0) parts.push(`全体で${r.ftotal}人以上`);
+    return parts.length ? parts.join("・") + "そろったら開催" : "だれか1人いれば開催";
+  }
   return `集まった人でやる(${r.minOpen}人から)`;
 }
 const weeklyRestOn = day => !isHoliday(day) && (S.group.restDays || []).includes(parseDay(day).getUTCDay());
@@ -193,6 +205,10 @@ function needFor(day, ovs = S.overrides){
 // the group's rule, ignoring rest days and one-day settings
 function usualRule(){
   const n = Object.keys(S.members).length, g = S.group;
+  if (g.rule === "frame"){
+    const sum = Object.values(g.fq).reduce((a, b) => a + b, 0);
+    return { frame:true, fq:g.fq, ftotal:g.ftotal, need:Math.max(1, sum, g.ftotal), tag:ruleText(g, n) };
+  }
   if (g.rule === "minus"){ const need = minusNeed(g.minus, n); return { need, tag:`${n}人中${need}人で開催` }; }
   if (g.rule === "ratio"){ const need = Math.max(1, RATIOS[g.ratio].need(n)); return { need, tag:`${n}人中${need}人で開催` }; }
   if (g.rule === "open") return { need:g.minOpen, open:true, tag:`集まった人でやる・${g.minOpen}人から` };
@@ -231,6 +247,19 @@ function answersFor(day){
 }
 const isMasu = a => !!a && a.status === "masu";
 const isTabun = a => !!a && a.status === "tabun";
+// does this set of people (the ones saying ます) meet the day's rule, and who is still missing
+function ruleCheck(r, ids){
+  if (r.rest) return { met:false, left:0, parts:[] };
+  if (r.frame){
+    const parts = Object.keys(FRAMES).filter(k => r.fq[k] > 0)
+      .map(k => ({ k, left:Math.max(0, r.fq[k] - ids.filter(id => S.frames[id] === k).length) }));
+    const frameLeft = parts.reduce((a, p) => a + p.left, 0);
+    const left = Math.max(frameLeft, r.ftotal - ids.length, ids.length ? 0 : 1);
+    return { met:left === 0, left, parts:parts.filter(p => p.left > 0), totalLeft:Math.max(0, r.ftotal - ids.length) };
+  }
+  const left = Math.max(0, r.need - ids.length, ids.length ? 0 : 1);
+  return { met:left === 0, left, parts:[] };
+}
 function masuCount(day){ const ad = answersFor(day); return Object.values(ad).filter(isMasu).length; }
 const myKey = day => day + "_" + S.me;
 // my real answer for the day ("none" = I cleared it), and the one that counts as an answer
@@ -255,6 +284,11 @@ const AV_NAMES = { 12:"黒", 13:"赤", 14:"青", 15:"黄" };
 const SHAPES = { circle:"まる", squircle:"角丸", badge:"バッジ", flower:"お花", hexagon:"六角形" };
 const avBg = i => i === 12 ? "#141318" : AV_VIVID[i] || `hsl(${i * 30} 55% 44%)`;
 const avStyle = i => `--avbg:${avBg(i)};--avfg:${i === 15 ? "#2b1d00" : "#fff"}`;
+// the frame colour around a member's icon, while the group decides by frames
+function frameRing(id, av){
+  const c = S.group && S.group.rule === "frame" ? S.frames[id] : null;
+  return c ? h("span", { class:"av-ring", style:`--ring:${FRAMES[c].color}`, title:FRAMES[c].label }, av) : av;
+}
 function avatar(id, name){
   const m = S.members[id], shape = m && m.shape && m.shape !== "circle" ? m.shape : "";
   return h("span", { class:"av" + (shape ? " shape-" + shape : ""), style:avStyle(colorIndex(id)), "aria-hidden":"true", text:[...(name || "?")][0] });
@@ -353,7 +387,7 @@ function stepper(get, set, min, max, unit){
   sync();
   return h("div", { class:"stepper" }, minus, out, h("span", { text:unit }), plus);
 }
-function rulePicker(root, memberCount, onChange){
+function rulePicker(root, memberCount, onChange, withFrames){
   let st = cleanRule({});
   const changed = () => { if (onChange) onChange(); };
   // with members known, every number stays within them (the create form has none yet, so it's left alone)
@@ -366,14 +400,20 @@ function rulePicker(root, memberCount, onChange){
   const draw = () => {
     fit();
     const seg = h("div", { class:"seg", role:"radiogroup" },
-      [["count","人数を\n決める"],["minus","メンバー数に\n合わせる"],["open","集まった\n人でやる"]].map(([k, l]) =>
+      [["count","人数を\n決める"],["minus","メンバー数に\n合わせる"],["open","集まった\n人でやる"], ...(withFrames ? [["frame","枠で\n決める"]] : [])].map(([k, l]) =>
         h("button", { type:"button", role:"radio", "aria-checked":String(st.rule === k), class: st.rule === k ? "on" : "", onclick:() => { st.rule = k; draw(); changed(); } },
           ...l.split("\n").flatMap((p, i) => i ? [h("br"), p] : [p]))));
     let detail;
     const n = () => memberCount(), cap = () => n() >= 1 ? n() : 20;
     if (st.rule === "count") detail = stepper(() => st.quorum, v => { st.quorum = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, cap, "人そろったら開催");
     else if (st.rule === "minus") detail = stepper(() => st.minus, v => { st.minus = v; hint.textContent = minusHint(); changed(); }, 0, () => n() >= 1 ? Math.max(0, n() - 1) : 19, "人少なくても開催");
-    else detail = stepper(() => st.minOpen, v => { st.minOpen = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, cap, "人いればやる");
+    else if (st.rule === "open") detail = stepper(() => st.minOpen, v => { st.minOpen = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 1, cap, "人いればやる");
+    else detail = h("div", { class:"frame-steps" },
+      ...Object.keys(FRAMES).map(k => h("div", { class:"frame-step" },
+        h("span", { class:"frame-dot", style:`--ring:${FRAMES[k].color}` }), h("span", { class:"frame-l", text:FRAMES[k].label }),
+        stepper(() => st.fq[k], v => { st.fq = { ...st.fq, [k]: v }; hint.textContent = ruleText(st, memberCount()); changed(); }, 0, cap, "人"))),
+      h("div", { class:"frame-step" }, h("span", { class:"frame-l wide", text:"全体で" }),
+        stepper(() => st.ftotal, v => { st.ftotal = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 0, cap, "人以上")));
     const minusHint = () => {
       const n = memberCount();
       if (n < 2) return st.minus === 0 ? "メンバー全員そろったら開催します" : `メンバーが集まったら、その人数より${st.minus}人少なくても開催します`;
@@ -381,12 +421,14 @@ function rulePicker(root, memberCount, onChange){
     };
     const hint = h("p", { class:"rule-hint", text: st.rule === "minus" ? minusHint() : ruleText(st, memberCount()) });
     const extra = st.rule === "minus" ? h("p", { class:"rule-hint", text:"メンバーが増えたら、開催の人数も自動で増えます。" })
-      : st.rule === "open" ? h("p", { class:"rule-hint", text:"何人そろうかより、集まった人で遊ぶグループ向け。" }) : null;
+      : st.rule === "open" ? h("p", { class:"rule-hint", text:"何人そろうかより、集まった人で遊ぶグループ向け。" })
+      : st.rule === "frame" ? h("p", { class:"rule-hint", text:"0人の枠は条件にしません。だれがどの枠かは下で決めます。" }) : null;
     root.replaceChildren(...[seg, detail, hint, extra].filter(Boolean));
   };
   draw();
   return {
-    get:() => ({ rule:st.rule, quorum:st.quorum, minus:st.minus, ratio:st.ratio, minOpen:st.minOpen }),
+    get:() => ({ rule:st.rule, quorum:st.quorum, minus:st.minus, ratio:st.ratio, minOpen:st.minOpen, fq:{ ...st.fq }, ftotal:st.ftotal }),
+    rule:() => st.rule,
     set(v){
       st = cleanRule(v);
       // an old "何人中何人" group opens as the matching "◯人少なくても開催"
