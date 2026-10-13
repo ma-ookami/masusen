@@ -118,7 +118,7 @@ function renderMain(){
   else if (skip) status = `⏭ ${dayWord}は開催スキップです!`;
   else if (rule.override) status = `${dayWord}だけ${rule.need}人でOK・あと${rest}人`;
   else if (rule.frame) status = (chk.parts.length ? chk.parts.map(p => `${FRAMES[p.k].label}あと${p.left}人`).join("・") : `あと${rest}人`)
-    + (chk.parts.length && chk.totalLeft > chk.parts.reduce((a, p) => a + p.left, 0) ? `・全体あと${chk.totalLeft}人` : "") + "で開催";
+    + (chk.parts.length && chk.totalLeft > chk.parts.reduce((a, p) => a + p.left, 0) ? `・合計あと${chk.totalLeft}人` : "") + "で開催";
   else if (rule.open) status = `${rule.need}人いればやる・あと${rest}人`;
   else status = `あと${rest}人で開催`;
   $("scoreSub").textContent = status + (tabunN && !skip && !rule.rest ? `・たぶん${tabunN}人` : "");

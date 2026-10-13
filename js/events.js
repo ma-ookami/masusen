@@ -232,7 +232,8 @@ function renderFrameMembers(){
       h("div", { class:"frame-pick", role:"radiogroup", "aria-label":`${S.members[id].name}の枠` },
         [["", "なし"], ...Object.entries(FRAMES).map(([k, f]) => [k, f.label])].map(([k, l]) =>
           h("button", { type:"button", role:"radio", "aria-checked":String(cur === k), disabled:!can,
-            class:"fp" + (cur === k ? " on" : ""), style:k ? `--ring:${FRAMES[k].color}` : "", onclick:() => setFrame(id, k) }, l))));
+            "aria-label":l, title:l,
+            class:"fp" + (k ? "" : " none") + (cur === k ? " on" : ""), style:k ? `--ring:${FRAMES[k].color}` : "", onclick:() => setFrame(id, k) }, k ? "" : "なし"))));
   }));
   $("frameHint").textContent = admin ? "作った人は、全員の枠を変えられます。" : "自分の枠だけ変えられます。";
 }

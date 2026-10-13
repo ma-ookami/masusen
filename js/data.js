@@ -189,7 +189,7 @@ function ruleText(r, n){
   if (r.rule === "ratio") return `メンバーの${RATIOS[r.ratio].label}で開催` + (n ? `(${n}人中${Math.max(1, RATIOS[r.ratio].need(n))}人)` : "");
   if (r.rule === "frame"){
     const parts = Object.keys(FRAMES).filter(k => r.fq[k] > 0).map(k => `${FRAMES[k].label}${r.fq[k]}人`);
-    if (r.ftotal > 0) parts.push(`全体で${r.ftotal}人以上`);
+    if (r.ftotal > 0) parts.push(`合計${r.ftotal}人以上`);
     return parts.length ? parts.join("・") + "そろったら開催" : "だれか1人いれば開催";
   }
   return `集まった人でやる(${r.minOpen}人から)`;
@@ -287,7 +287,9 @@ const avStyle = i => `--avbg:${avBg(i)};--avfg:${i === 15 ? "#2b1d00" : "#fff"}`
 // the frame colour around a member's icon, while the group decides by frames
 function frameRing(id, av){
   const c = S.group && S.group.rule === "frame" ? S.frames[id] : null;
-  return c ? h("span", { class:"av-ring", style:`--ring:${FRAMES[c].color}`, title:FRAMES[c].label }, av) : av;
+  if (!c) return av;
+  const m = S.members[id], sh = m && m.shape && m.shape !== "circle" ? " shape-" + m.shape : "";
+  return h("span", { class:"av-ring" + sh, style:`--ring:${FRAMES[c].color}`, title:FRAMES[c].label }, h("span", { class:"av-gap" + sh }, av));
 }
 function avatar(id, name){
   const m = S.members[id], shape = m && m.shape && m.shape !== "circle" ? m.shape : "";
@@ -412,8 +414,8 @@ function rulePicker(root, memberCount, onChange, withFrames){
       ...Object.keys(FRAMES).map(k => h("div", { class:"frame-step" },
         h("span", { class:"frame-dot", style:`--ring:${FRAMES[k].color}` }), h("span", { class:"frame-l", text:FRAMES[k].label }),
         stepper(() => st.fq[k], v => { st.fq = { ...st.fq, [k]: v }; hint.textContent = ruleText(st, memberCount()); changed(); }, 0, cap, "人"))),
-      h("div", { class:"frame-step" }, h("span", { class:"frame-l wide", text:"全体で" }),
-        stepper(() => st.ftotal, v => { st.ftotal = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 0, cap, "人以上")));
+      h("div", { class:"frame-step" }, h("span", { class:"frame-dot sum", "aria-hidden":"true" }), h("span", { class:"frame-l", text:"合計" }),
+        stepper(() => st.ftotal, v => { st.ftotal = v; hint.textContent = ruleText(st, memberCount()); changed(); }, 0, cap, "人")));
     const minusHint = () => {
       const n = memberCount();
       if (n < 2) return st.minus === 0 ? "メンバー全員そろったら開催します" : `メンバーが集まったら、その人数より${st.minus}人少なくても開催します`;
@@ -422,7 +424,7 @@ function rulePicker(root, memberCount, onChange, withFrames){
     const hint = h("p", { class:"rule-hint", text: st.rule === "minus" ? minusHint() : ruleText(st, memberCount()) });
     const extra = st.rule === "minus" ? h("p", { class:"rule-hint", text:"メンバーが増えたら、開催の人数も自動で増えます。" })
       : st.rule === "open" ? h("p", { class:"rule-hint", text:"何人そろうかより、集まった人で遊ぶグループ向け。" })
-      : st.rule === "frame" ? h("p", { class:"rule-hint", text:"0人の枠は条件にしません。だれがどの枠かは下で決めます。" }) : null;
+      : st.rule === "frame" ? h("p", { class:"rule-hint", text:"「合計」は枠に関係なく、ますの人全体の人数(枠の人もふくむ)。0の行は条件にしません。だれがどの枠かは下で決めます。" }) : null;
     root.replaceChildren(...[seg, detail, hint, extra].filter(Boolean));
   };
   draw();
