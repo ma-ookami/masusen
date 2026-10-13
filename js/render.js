@@ -122,7 +122,7 @@ function renderMain(){
     + (chk.parts.length && chk.totalLeft > chk.parts.reduce((a, p) => a + p.left, 0) ? `・合計あと${chk.totalLeft}人` : "") + "で開催";
   else if (rule.open) status = `${rule.need}人いればやる・あと${rest}人`;
   else status = `あと${rest}人で開催`;
-  $("scoreSub").textContent = status + (tabunN && !skip && !rule.rest ? (S.group.countTabun ? `(たぶん${tabunN}人ふくむ)` : `・たぶん${tabunN}人`) : "");
+  $("scoreSub").textContent = status + (tabunN && !skip && !rule.rest ? (S.group.countTabun ? "" : `・たぶん${tabunN}人`) : "");
   const card = $("scoreCard"), wasHeld = card.classList.contains("held"), wasSkip = card.classList.contains("skip");
   card.classList.toggle("held", fest);
   card.classList.toggle("soft", fest && !!rule.open);
