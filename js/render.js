@@ -114,7 +114,7 @@ function renderMain(){
   const skip = !fest && !rule.rest && ids.length > 0 && ids.every(id => today[id])
     && !ruleCheck(rule, ids.filter(id => isMasu(today[id]) || isTabun(today[id]))).met;
   let status;
-  if (rule.rest) status = `💤 ${dayWord}の開催はお休みです!`;
+  if (rule.rest) status = `💤 ${dayWord}はお休みです!`;
   else if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
   else if (skip) status = `⏭ ${dayWord}は開催スキップです!`;
   else if (rule.override) status = `${dayWord}だけ${rule.need}人でOK・あと${rest}人`;
