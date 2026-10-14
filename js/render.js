@@ -203,11 +203,11 @@ function renderPlan(){
   $("planCard").hidden = !S.group.showPlan;
   if (!S.group.showPlan) return;
   const day = S.sel, plan = S.plans[day], ro = S.canWrite === false;
-  $("planLabel").textContent = `${relLabel(day)}やること`;
-  $("planBy").textContent = !S.anon && plan && plan.by && S.members[plan.by] ? `${S.members[plan.by].name}が決めた` : "";
+  $("planLabel").textContent = `${relLabel(day)}のお知らせ`;
+  $("planBy").textContent = !S.anon && plan && plan.by && S.members[plan.by] ? `${S.members[plan.by].name}が書いた` : "";
   const v = $("planView");
   v.classList.toggle("empty", !plan);
-  v.replaceChildren(plan ? plan.text : (ro ? "まだ決まってない" : "まだ決まってない ・ タップして書く"));
+  v.replaceChildren(plan ? plan.text : (ro ? "お知らせはありません" : "お知らせはありません ・ タップして書く"));
   if (plan && !ro) v.append(h("span", { class:"pen", text:"✎ 変える" }));
   v.disabled = ro;
   $("planEdit").hidden = !planEditing; v.hidden = planEditing;
@@ -226,7 +226,7 @@ function savePlan(text){
   if (t) p[day] = { text:t, by:S.me }; else delete p[day];
   S.plans = p; planEditing = false; renderPlan();
   writeDoc(S.db.doc(`groups/${S.gid}/plans/${day}`), t ? { text:t, day, by:S.me, at:Date.now() } : null);
-  toast(t ? `${relLabel(day)}やること:${t}` : "未定にもどしました");
+  toast(t ? `${relLabel(day)}のお知らせ:${t}` : "お知らせを消しました");
 }
 $("planView").addEventListener("click", () => {
   if (S.canWrite === false) return;

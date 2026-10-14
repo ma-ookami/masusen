@@ -395,7 +395,7 @@ async function deleteGroup(gid){
 $("planToggle").addEventListener("change", async e => {
   const on = e.target.checked;
   S.group = { ...S.group, showPlan:on }; render();
-  try { await withRetry(() => S.db.doc("groups/" + S.gid).update({ showPlan:on })); toast(on ? "保存しました:「今日やること」を表示します" : "保存しました:「今日やること」を表示しません"); }
+  try { await withRetry(() => S.db.doc("groups/" + S.gid).update({ showPlan:on })); toast(on ? "保存しました:「お知らせ」を表示します" : "保存しました:「お知らせ」を表示しません"); }
   catch (err){ onWriteError(err); }
 });
 
