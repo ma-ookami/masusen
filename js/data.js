@@ -29,7 +29,7 @@ function openGroup(gid, quiet){
   S.unsubs.push(g.onSnapshot(snap => {
     if (S.gid !== gid) return;
     const d = snap.exists ? snap.data() : null;
-    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), restDays:cleanRestDays(d.restDays), countTabun:d.countTabun === true, showPlan: d.showPlan !== false, createdBy: str(d.createdBy,200) } : null;
+    S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), restDays:cleanRestDays(d.restDays), countTabun:d.countTabun === true, pinNote:str(d.pinNote, 40).trim(), showPlan: d.showPlan !== false, createdBy: str(d.createdBy,200) } : null;
     if (!snap.metadata.fromCache || d) S.groupLoaded = true; else settle("groupLoaded");
     render();
   }, onSubError));

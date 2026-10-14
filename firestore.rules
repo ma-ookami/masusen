@@ -90,7 +90,7 @@ service cloud.firestore {
 
     // ---------- shapes ----------
     function validGroup(d) {
-      return d.keys().hasOnly(['name', 'rule', 'quorum', 'minus', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan', 'restDays', 'fq', 'ftotal', 'countTabun'])
+      return d.keys().hasOnly(['name', 'rule', 'quorum', 'minus', 'ratio', 'minOpen', 'createdBy', 'createdAt', 'showPlan', 'restDays', 'fq', 'ftotal', 'countTabun', 'pinNote'])
         && isText(d.name, 1, 24)
         && d.get('rule', 'count') in ['count', 'minus', 'ratio', 'open', 'frame']
         && intIn(d.get('quorum', 4), 1, 20)
@@ -102,7 +102,8 @@ service cloud.firestore {
         && (!('fq' in d) || (d.fq is map && d.fq.keys().hasOnly(['blue', 'red', 'green'])
             && intIn(d.fq.get('blue', 0), 0, 20) && intIn(d.fq.get('red', 0), 0, 20) && intIn(d.fq.get('green', 0), 0, 20)))
         && intIn(d.get('ftotal', 0), 0, 20)
-        && d.get('countTabun', false) is bool;
+        && d.get('countTabun', false) is bool
+        && (!('pinNote' in d) || isText(d.pinNote, 0, 40));
     }
     function validMember(d) {
       return d.keys().hasOnly(['name', 'joinedAt', 'color', 'hasPin', 'shape', 'weekly', 'char'])

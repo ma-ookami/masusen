@@ -200,9 +200,16 @@ function renderMain(){
 
 let planEditing = false;
 function renderPlan(){
-  $("planCard").hidden = !S.group.showPlan;
-  if (!S.group.showPlan) return;
+  const pin = S.group.pinNote || "";
+  $("planCard").hidden = !S.group.showPlan && !pin;
+  if ($("planCard").hidden) return;
   const day = S.sel, plan = S.plans[day], ro = S.canWrite === false;
+  // the きまり line: always there when set; with no お知らせ it carries the 「+ お知らせ」 button instead
+  $("pinLine").hidden = !pin; $("pinText").textContent = pin;
+  const showPlan = S.group.showPlan && (!pin || !!plan || planEditing);
+  $("planAdd").hidden = ro || !S.group.showPlan || !!plan || planEditing;
+  $("planHead").hidden = !showPlan; $("planView").hidden = !showPlan;
+  if (!showPlan){ $("planEdit").hidden = true; return; }
   $("planLabel").textContent = `${relLabel(day)}のお知らせ`;
   $("planBy").textContent = !S.anon && plan && plan.by && S.members[plan.by] ? `${S.members[plan.by].name}が書いた` : "";
   const v = $("planView");
@@ -212,6 +219,7 @@ function renderPlan(){
   if (!ro) v.append(h("span", { class:"pen", text: plan ? "✎ 変える" : "+ 書く" }));
   v.disabled = ro;
   $("planEdit").hidden = !planEditing; v.hidden = planEditing;
+  $("planHead").hidden = false;
   if (planEditing){
     const recent = {};
     Object.values(S.answers).forEach(a => { if (a.game) recent[a.game] = (recent[a.game] || 0) + 1; });
@@ -229,6 +237,7 @@ function savePlan(text){
   writeDoc(S.db.doc(`groups/${S.gid}/plans/${day}`), t ? { text:t, day, by:S.me, at:Date.now() } : null);
   toast(t ? `${relLabel(day)}のお知らせ:${t}` : "お知らせを消しました");
 }
+$("planAdd").addEventListener("click", () => $("planView").click());
 $("planView").addEventListener("click", () => {
   if (S.canWrite === false) return;
   planEditing = true; renderPlan();

@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap">
-<link rel="stylesheet" href="css/style.css?v=85b0fcac">
+<link rel="stylesheet" href="css/style.css?v=41e23b06">
 </head>
 <body>
 <div class="wrap">
@@ -145,7 +145,8 @@
           </div>
         </div>
         <div class="card plan-card" id="planCard">
-          <div class="plan-h"><span class="label" id="planLabel">今日のお知らせ</span><span class="by" id="planBy"></span></div>
+          <div class="pin-line" id="pinLine" hidden><span class="pin-t"><span aria-hidden="true">📌</span> <span id="pinText"></span></span><button type="button" class="pin-add" id="planAdd">+ お知らせ</button></div>
+          <div class="plan-h" id="planHead"><span class="label" id="planLabel">今日のお知らせ</span><span class="by" id="planBy"></span></div>
           <button class="plan-v" id="planView"></button>
           <div id="planEdit" class="stack" hidden style="gap:8px">
             <div class="chips" id="planChips"></div>
@@ -292,6 +293,11 @@
     <h3 class="box-h">グループ名</h3>
     <div class="inline"><input class="input" id="gNameInput" maxlength="24" required enterkeyhint="done"><button class="btn primary">保存</button></div>
   </form>
+  <form class="sec box" id="pinForm2" data-tab="group">
+    <h3 class="box-h">グループのきまり</h3>
+    <div class="inline"><input class="input" id="pinInput" maxlength="40" placeholder="例:当日のますはLINEへ" enterkeyhint="done"><button class="btn primary">保存</button></div>
+    <p class="rule-hint" style="margin:0">毎日、お知らせの上に 📌 で出ます。空にして保存すると消えます。</p>
+  </form>
   <div class="sec box" data-tab="group">
     <h3 class="box-h">開催のルール</h3>
     <div id="gRule" class="stack"></div>
@@ -358,10 +364,10 @@
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-check-compat.js"></script>
 <script src="firebase-config.js"></script>
 <script src="js/base.js?v=790ce577"></script>
-<script src="js/data.js?v=afa47822"></script>
+<script src="js/data.js?v=c1863685"></script>
 <script src="js/ui.js?v=f3f16d6d"></script>
-<script src="js/render.js?v=0eba8fc7"></script>
-<script src="js/events.js?v=705b1111"></script>
+<script src="js/render.js?v=695bc038"></script>
+<script src="js/events.js?v=26d9e18f"></script>
 <script src="js/mascot.js?v=c2ccf7b2"></script>
 <script src="js/move.js?v=8175051b"></script>
 <script src="js/boot.js?v=1b6bc9b9"></script>
