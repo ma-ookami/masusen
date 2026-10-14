@@ -207,8 +207,9 @@ function renderPlan(){
   $("planBy").textContent = !S.anon && plan && plan.by && S.members[plan.by] ? `${S.members[plan.by].name}が書いた` : "";
   const v = $("planView");
   v.classList.toggle("empty", !plan);
-  v.replaceChildren(plan ? plan.text : (ro ? "お知らせはありません" : "お知らせはありません ・ タップして書く"));
-  if (plan && !ro) v.append(h("span", { class:"pen", text:"✎ 変える" }));
+  v.replaceChildren(plan ? plan.text : "お知らせはありません");
+  // looks like a button; the whole line is the tap target (a button can't hold another button)
+  if (!ro) v.append(h("span", { class:"pen", text: plan ? "✎ 変える" : "+ 書く" }));
   v.disabled = ro;
   $("planEdit").hidden = !planEditing; v.hidden = planEditing;
   if (planEditing){

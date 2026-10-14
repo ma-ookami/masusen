@@ -487,10 +487,12 @@ body.is-fest .fest{display:block;animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
 .plan-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .plan-h .label{color:var(--coral)}
 .plan-h .by{font-size:12px;color:var(--muted)}
-.plan-v{all:unset;cursor:pointer;display:block;font-family:var(--f-display);font-size:17px;line-height:1.3;overflow-wrap:anywhere;border-radius:8px}
+.plan-v{all:unset;cursor:pointer;display:block;font-family:var(--f-body);font-weight:800;font-size:16px;line-height:1.45;overflow-wrap:anywhere;border-radius:8px}
 .plan-v:focus-visible{outline:3px solid var(--masu);outline-offset:2px}
 .plan-v.empty{font-family:var(--f-body);font-size:13px;font-weight:700;color:var(--muted)}
-.plan-v .pen{font-family:var(--f-body);font-size:12px;color:var(--muted);font-weight:700;margin-left:8px;vertical-align:middle}
+.plan-v .pen{display:inline-block;font-family:var(--f-body);font-size:12px;line-height:1;color:var(--fg);font-weight:800;margin-left:8px;vertical-align:middle;
+  padding:5px 10px;border:1px solid color-mix(in srgb,var(--muted) 70%,var(--line));border-radius:999px;background:var(--surface)}
+.plan-v:active .pen{transform:scale(.95)}
 .st{font-weight:800;font-size:12px;padding:3px 10px;border-radius:999px;white-space:nowrap;border:1px dashed var(--none);color:var(--muted)}
 .st.masu{background:var(--masu);color:var(--masu-ink);border:0} .st.tabun{background:var(--tabun);color:var(--tabun-ink);border:0} .st.sen{background:var(--sen);color:var(--sen-ink);border:0}
 
