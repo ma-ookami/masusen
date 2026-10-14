@@ -37,7 +37,7 @@ showSetTab("me");
 $("setBtn").addEventListener("click", () => {
   S.seen = undefined; if (isCreatorHere()) loadSeen();
   charDraft = null; renderCharMaker(); setCharOpen(false);
-  $("pinInput").value = S.group.pinNote || "";
+  $("noteInput").value = S.group.pinNote || "";
  gPicker.set(S.group); $("countTabun").checked = !!S.group.countTabun; restDraft = [...(S.group.restDays || [])]; renderRestPick(); updateRuleSave(); wkDraft = null; wkSel = parseDay(S.day).getUTCDay(); delete $("rName").dataset.dirty; delete $("gNameInput").dataset.dirty; openSheet("shSet"); });
 $("shareBtn").addEventListener("click", () => copy(linkFor(S.gid), "招待リンクをコピーしました。LINEやDiscordに貼ってね"));
 $("anonBtn").addEventListener("click", () => {
@@ -207,13 +207,13 @@ $("renameForm").addEventListener("submit", async e => {
   catch (err){ onWriteError(err); }
 });
 $("gNameInput").addEventListener("input", () => { $("gNameInput").dataset.dirty = "1"; });
-$("pinForm2").addEventListener("submit", async e => {
+$("noteForm").addEventListener("submit", async e => {
   e.preventDefault();
-  const pinNote = $("pinInput").value.trim().slice(0, 40);
+  const pinNote = $("noteInput").value.trim().slice(0, 40);
   if (pinNote === (S.group.pinNote || "")) return;
   try {
     await withRetry(() => S.db.doc("groups/" + S.gid).update({ pinNote }));
-    S.group = { ...S.group, pinNote }; render(); $("pinInput").blur();
+    S.group = { ...S.group, pinNote }; render(); $("noteInput").blur();
     toast(pinNote ? "グループのきまりを保存しました" : "グループのきまりを消しました");
   } catch (err){ onWriteError(err); }
 });
