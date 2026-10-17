@@ -111,8 +111,7 @@ function renderMain(){
   const fest = !rule.rest && chk.met;
   const dayWord = day === S.day ? "今日" : day === addDays(S.day, 1) ? "明日" : "この日";
   // everyone has answered and even the maybes can't make it: the day is off
-  const skip = !fest && !rule.rest && ids.length > 0 && ids.every(id => today[id])
-    && !ruleCheck(rule, ids.filter(id => isMasu(today[id]) || isTabun(today[id]))).met;
+  const skip = !fest && !rule.rest && cannotHold(rule, ids, today);
   let status;
   if (rule.rest) status = `💤 ${dayWord}はお休みです!`;
   else if (fest) status = rule.open ? `🎉 ${dayWord}は${masuN}人でやります!` : `🎉 ${dayWord}は開催です!`;
@@ -141,8 +140,7 @@ function renderMain(){
     const n = masuCount(d), r = needFor(d), my = mineOn(d);
     const ad = answersFor(d), mids = Object.keys(S.members);
     const held = !r.rest && ruleCheck(r, mids.filter(id => counts(ad[id]))).met;
-    const skipped = !held && !r.rest && mids.length > 0 && mids.every(id => ad[id])
-      && !ruleCheck(r, mids.filter(id => isMasu(ad[id]) || isTabun(ad[id]))).met;
+    const skipped = !held && !r.rest && cannotHold(r, mids, ad);
     const t = parseDay(d);
     const wdN = t.getUTCDay();
     return h("button", { class: "wd" + (d === day ? " sel" : "") + (held ? " held" : skipped ? " skipd" : r.rest ? " restd" : "") + (i === 0 ? " today" : i === 1 ? " tmrw" : "") + (wdN === 0 || isHoliday(d) ? " sun" : wdN === 6 ? " sat" : ""), role:"tab", "aria-selected":String(d === day),

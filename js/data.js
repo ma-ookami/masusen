@@ -262,6 +262,14 @@ function ruleCheck(r, ids){
 }
 // counts toward holding the day: ます, and たぶんます too when the group says so
 const counts = a => isMasu(a) || (!!(S.group && S.group.countTabun) && isTabun(a));
+// the day can no longer be held:
+//  - usual rules: everyone has answered and even the maybes are not enough
+//  - 枠で決める: even counting everyone who hasn't said せん (not answered yet included), a frame can't fill
+function cannotHold(r, ids, ad){
+  if (!ids.length) return false;
+  if (r.frame) return !ruleCheck(r, ids.filter(id => !(ad[id] && ad[id].status === "sen"))).met;
+  return ids.every(id => ad[id]) && !ruleCheck(r, ids.filter(id => isMasu(ad[id]) || isTabun(ad[id]))).met;
+}
 function masuCount(day){ const ad = answersFor(day); return Object.values(ad).filter(isMasu).length; }
 const myKey = day => day + "_" + S.me;
 // my real answer for the day ("none" = I cleared it), and the one that counts as an answer
