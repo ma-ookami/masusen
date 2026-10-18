@@ -30,7 +30,9 @@ function openGroup(gid, quiet){
     if (S.gid !== gid) return;
     const d = snap.exists ? snap.data() : null;
     S.group = d ? { name:str(d.name,24) || "グループ", ...cleanRule(d), restDays:cleanRestDays(d.restDays), countTabun:d.countTabun === true, pinNote:str(d.pinNote, 40).trim(), showPlan: d.showPlan !== false, createdBy: str(d.createdBy,200) } : null;
-    if (!snap.metadata.fromCache || d) S.groupLoaded = true; else settle("groupLoaded");
+    // "not found" only on the server's word: an empty cache on a slow connection must not look like a deleted group
+    // (that also dropped the group from the home list)
+    if (!snap.metadata.fromCache || d) S.groupLoaded = true;
     render();
   }, onSubError));
 
